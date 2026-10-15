@@ -1,0 +1,21 @@
+# Personal data — never commit (payslips, withholding slips, exports)
+private/
+inbox/
+*.pdf
+*.export.json
+
+# Build / tooling
+node_modules/
+dist/
+dev-dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
