@@ -1,6 +1,6 @@
 // Default item master (requirements 6.2 table + items found in the 2024-2026 slips).
 // Payment items are all taxable: their sum equals 支払金額 on the 2024/2025 withholding slips.
-import type { ForecastMethod, ItemBlock, ItemMaster, TaxCategory } from './types';
+import type { ForecastMethod, InsuranceBase, ItemBlock, ItemMaster, TaxCategory } from './types';
 
 type Seed = [name: string, block: ItemBlock, category: TaxCategory, method: ForecastMethod];
 
@@ -30,11 +30,35 @@ const SEEDS: Seed[] = [
   ['レインバース', 'deduction', 'otherDeduction', 'none'],
 ];
 
+/** Social insurance items levied on a standard remuneration (name → base). */
+export const INSURANCE_BASE_BY_NAME: Record<string, InsuranceBase> = {
+  健康保険: 'health',
+  介護保険: 'nursing',
+  厚生年金: 'pension',
+  子育て支援金: 'childSupport',
+};
+
+/**
+ * Payments that are not 報酬 for the standard remuneration. 特別支給 is offset by the same amount
+ * in その他控除 (stock-related); excluding it reproduces the October 2024 grade on the real slips.
+ */
+export const EXCLUDED_FROM_REMUNERATION = new Set(['特別支給', 'その他支給']);
+
+export function isExcludedFromRemuneration(item: ItemMaster): boolean {
+  return item.excludeFromRemuneration ?? EXCLUDED_FROM_REMUNERATION.has(item.name);
+}
+
+export function insuranceBaseOf(item: ItemMaster): InsuranceBase | undefined {
+  return item.insuranceBase ?? INSURANCE_BASE_BY_NAME[item.name];
+}
+
 export function seedItems(): ItemMaster[] {
   return SEEDS.map(([name, block, category, defaultMethod], i) => ({
     id: `item-${i + 1}`,
     name,
     aliases: [],
+    ...(INSURANCE_BASE_BY_NAME[name] ? { insuranceBase: INSURANCE_BASE_BY_NAME[name] } : {}),
+    ...(EXCLUDED_FROM_REMUNERATION.has(name) ? { excludeFromRemuneration: true } : {}),
     block,
     category,
     defaultMethod,

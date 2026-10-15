@@ -15,7 +15,8 @@ import { parseWithholdingSlip, type WithholdingSlipData } from '../src/import/wi
 import { parsePayslip } from '../src/import/payslip';
 import { planImport } from '../src/domain/importer';
 import { seedItems } from '../src/domain/itemSeeds';
-import { buildLedger } from '../src/domain/ledger';
+import { actualAmounts, buildLedger } from '../src/domain/ledger';
+import { premiumsAt, remunerationPlan, REVISION_LABEL } from '../src/domain/socialInsurance';
 import { computeAnnual, EMPTY_RECORDS } from '../src/domain/annual';
 import type { InsuranceContract } from '../src/domain/types';
 import { readPdfText } from './lib/node-pdf';
@@ -216,6 +217,27 @@ async function verifyPayslips(): Promise<boolean> {
       const mark = c.expected === c.actual ? '  ok' : '  NG';
       console.log(
         `${mark} ${c.label}: 票/明細 ${c.expected.toLocaleString()} / 計算 ${c.actual.toLocaleString()}`,
+      );
+    }
+  }
+  console.log('== F-11 社会保険料の再予測 × 10月の実績保険料 ==');
+  for (const year of [2024, 2025]) {
+    const plan = remunerationPlan(ledger, year, getParams(year).socialInsurance.value, undefined);
+    const oct = actualAmounts(ledger, year, { month: 10, kind: 'salary' });
+    const premiums = premiumsAt(plan, 10);
+    const used = plan?.revisions.filter((r) => r.fromMonth <= 10).at(-1);
+    if (!plan || !oct || !premiums || !used) continue;
+    console.log(
+      `${year}年 ${REVISION_LABEL[used.kind]} 報酬平均 ${used.averageRemuneration.toLocaleString()}` +
+        ` → 健保 ${used.healthGrade.amount.toLocaleString()} / 厚年 ${used.pensionGrade.amount.toLocaleString()}` +
+        `（健保率 ${((plan.rates.health?.rate ?? 0) * 100).toFixed(3)}%）`,
+    );
+    for (const [itemId, predicted] of premiums) {
+      const actual = oct.get(itemId) ?? 0;
+      const name = items.find((i) => i.id === itemId)?.name ?? itemId;
+      allOk &&= predicted === actual;
+      console.log(
+        `  ${predicted === actual ? 'ok' : 'NG'} ${name} 予測 ${predicted.toLocaleString()} / 実績 ${actual.toLocaleString()}`,
       );
     }
   }

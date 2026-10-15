@@ -4,12 +4,15 @@ import {
   FORECAST_METHOD_LABEL,
   TAX_CATEGORY_LABEL,
   type ForecastMethod,
+  type InsuranceBase,
   type ItemMaster,
   type TaxCategory,
 } from '../../../domain/types';
+import { insuranceBaseOf, isExcludedFromRemuneration } from '../../../domain/itemSeeds';
 import { useAppData } from '../../state';
 import {
   Badge,
+  Checkbox,
   Notice,
   Panel,
   Select,
@@ -20,6 +23,13 @@ import {
   YenInput,
   errorText,
 } from '../../ui';
+
+const INSURANCE_BASE_LABEL: Record<InsuranceBase, string> = {
+  health: '健康保険の標準報酬',
+  nursing: '健康保険の標準報酬（介護）',
+  pension: '厚生年金の標準報酬',
+  childSupport: '健康保険の標準報酬（子育て支援金）',
+};
 
 const PAY_CATEGORIES: TaxCategory[] = ['taxablePay', 'nonTaxablePay', 'pending'];
 const DEDUCTION_CATEGORIES: TaxCategory[] = [
@@ -66,6 +76,7 @@ export function ItemMasterPanel() {
               <th className={TH}>区分</th>
               <th className={TH}>税分類</th>
               <th className={TH}>既定の予測方式</th>
+              <th className={TH}>標準報酬（F-11）</th>
               <th className={TH}>別名（旧名称、カンマ区切り）</th>
               <th className={`${TH} text-right`}>使用</th>
             </tr>
@@ -90,6 +101,32 @@ export function ItemMasterPanel() {
                       </option>
                     ))}
                   </Select>
+                </td>
+                <td className={`${TD} min-w-44`}>
+                  {item.block === 'payment' ? (
+                    <Checkbox
+                      label="報酬に含めない"
+                      checked={isExcludedFromRemuneration(item)}
+                      onChange={(v) => void update(item, { excludeFromRemuneration: v })}
+                    />
+                  ) : item.category === 'socialInsurance' ? (
+                    <Select
+                      value={insuranceBaseOf(item) ?? ''}
+                      onChange={(e) =>
+                        void update(item, {
+                          insuranceBase: (e.target.value || undefined) as InsuranceBase | undefined,
+                        })
+                      }
+                      aria-label={`${item.name}の保険料の基準`}
+                    >
+                      <option value="">再予測しない（雇用保険など）</option>
+                      {(Object.keys(INSURANCE_BASE_LABEL) as InsuranceBase[]).map((b) => (
+                        <option key={b} value={b}>
+                          {INSURANCE_BASE_LABEL[b]}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : null}
                 </td>
                 <td className={`${TD} min-w-44`}>
                   <div className="flex gap-1">

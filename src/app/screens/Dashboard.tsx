@@ -61,6 +61,14 @@ export function DashboardScreen() {
       });
     }
   }
+  const leaveMonths = records.yearSettings.find((s) => s.year === year)?.leaveMonths ?? [];
+  if (leaveMonths.includes(12)) {
+    alerts.push({
+      level: 'info',
+      text: '12月が休業のため、年末調整の精算時期は会社の扱いによります（12月中の振込・翌年の給与・確定申告のいずれか）',
+      href: '#/payslips',
+    });
+  }
   if (payslips.filter((p) => p.year === year).length === 0) {
     alerts.push({
       level: 'info',
@@ -74,7 +82,8 @@ export function DashboardScreen() {
       title={`${year}年分の見通し`}
       lead={
         summary.hasForecast
-          ? `予測を含む：給与${totals.forecastSalaryMonths}か月・賞与${totals.forecastBonusCount}回`
+          ? `予測を含む：給与${totals.forecastSalaryMonths}か月・賞与${totals.forecastBonusCount}回` +
+            (leaveMonths.length > 0 ? `／休業 ${leaveMonths.map((m) => `${m}月`).join('・')}` : '')
           : '全月が実績です'
       }
     >

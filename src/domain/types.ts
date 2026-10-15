@@ -38,9 +38,15 @@ export const FORECAST_METHOD_LABEL: Record<ForecastMethod, string> = {
   none: '予測しない',
 };
 
+/** Which standard remuneration a social insurance item is levied on (F-11). */
+export type InsuranceBase = 'health' | 'nursing' | 'pension' | 'childSupport';
+
 export interface ItemMaster {
   id: string;
   name: string;
+  insuranceBase?: InsuranceBase;
+  /** Not part of 報酬 for the standard remuneration (e.g. stock-related payments). */
+  excludeFromRemuneration?: boolean;
   /** Former or alternative printed names mapped to this item. */
   aliases: string[];
   block: ItemBlock;
@@ -203,4 +209,9 @@ export interface YearSetting {
   year: number;
   hasHealthCheckup: boolean;
   selfIsSpeciallyDisabled: boolean;
+  /** Salary months without pay (育児休業など). Forecasts for these months (salary and bonus) are zero. */
+  leaveMonths?: number[];
+  /** 健康保険・介護保険の本人負担率の手入力値（未設定なら明細から推定）. */
+  healthRate?: number;
+  nursingRate?: number;
 }

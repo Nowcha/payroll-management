@@ -5,6 +5,7 @@ import { newId } from '../../domain/repo';
 import type { FurusatoDonation } from '../../domain/types';
 import { useAppData } from '../state';
 import { useAnnual } from '../useAnnual';
+import { FurusatoScenario } from './FurusatoScenario';
 import {
   Badge,
   Button,
@@ -143,6 +144,7 @@ export function FurusatoScreen() {
           {w.message}
         </Notice>
       ))}
+      <FurusatoScenario base={summary} />
       <Panel
         title="寄付一覧"
         aside={

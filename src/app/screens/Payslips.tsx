@@ -6,6 +6,7 @@ import { EmptyState, Notice, Page, Panel, TableScroll, TD, TD_NUM, TH } from '..
 import { ImportPanel } from './payslips/ImportPanel';
 import { PayslipEditor } from './payslips/PayslipEditor';
 import { PayslipGrid } from './payslips/PayslipGrid';
+import { SocialPlanPanel } from './payslips/SocialPlanPanel';
 
 function WithholdingComparison({
   slip,
@@ -61,6 +62,7 @@ export function PayslipsScreen() {
       {error && <Notice level="error">{error}</Notice>}
       <ImportPanel />
       {summary && <PayslipGrid table={summary.table} />}
+      {summary && <SocialPlanPanel plan={summary.plan} />}
       <PayslipEditor />
       <Panel title="源泉徴収票との突合">
         {slip && summary ? (

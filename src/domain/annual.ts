@@ -19,6 +19,7 @@ import {
   type YearTotals,
 } from './forecast';
 import type { Ledger } from './ledger';
+import { remunerationPlan, type RemunerationPlan } from './socialInsurance';
 import type {
   FamilyMember,
   ForecastOverride,
@@ -69,6 +70,8 @@ export interface AnnualSummary {
   /** 上限（医療費控除の有無に応じた方）− 寄付済み. */
   furusatoRemaining: number;
   hasForecast: boolean;
+  /** F-11 plan (null until April–June salary is recorded). */
+  plan: RemunerationPlan | null;
 }
 
 const inYear = (date: string, year: number): boolean => date.startsWith(`${year}-`);
@@ -146,9 +149,14 @@ export function computeAnnual(
   scenario: Scenario = NO_SCENARIO,
 ): AnnualSummary {
   const params = getParams(year);
-  const baseTable = buildYearTable(ledger, year, overrides);
-  const baseTotals = yearTotals(ledger, baseTable);
   const setting = records.yearSettings.find((s) => s.year === year);
+  const plan = remunerationPlan(ledger, year, params.socialInsurance.value, setting);
+  const baseTable = buildYearTable(ledger, year, {
+    overrides,
+    leaveMonths: setting?.leaveMonths ?? [],
+    plan,
+  });
+  const baseTotals = yearTotals(ledger, baseTable);
   const input: TaxpayerInput = {
     year,
     salary: baseTotals.taxablePay + scenario.extraTaxablePay,
@@ -192,7 +200,11 @@ export function computeAnnual(
     estimate,
     donationsTotal,
     furusatoRemaining: limit - donationsTotal,
-    hasForecast: totals.forecastSalaryMonths > 0 || totals.forecastBonusCount > 0,
+    hasForecast:
+      totals.forecastSalaryMonths > 0 ||
+      totals.forecastBonusCount > 0 ||
+      totals.leaveSalaryMonths > 0,
+    plan,
   };
 }
 

@@ -4,6 +4,8 @@ import type { ParsedPayslip } from '../import/payslip';
 import { computeAnnual, EMPTY_RECORDS, furusatoWarnings } from './annual';
 import { compareCumulative, compareMonth } from './compare';
 import { buildYearTable, yearTotals } from './forecast';
+import { employeePremium, estimateRate, gradeOf, remunerationPlan } from './socialInsurance';
+import { getParams } from '../engine';
 import { planImport } from './importer';
 import { seedItems } from './itemSeeds';
 import { buildLedger } from './ledger';
@@ -181,16 +183,18 @@ describe('forecast', () => {
     expect(totals.taxablePay).toBe(400_000 * 12 + 30_000 + 60_000 + 90_000 + 60_000 * 9 + 800_000);
   });
   it('applies manual overrides', () => {
-    const table = buildYearTable(ledger, 2026, [
-      {
-        id: 'o',
-        year: 2026,
-        month: 5,
-        kind: 'salary',
-        itemId: byName('基本給').id,
-        amount: 500_000,
-      },
-    ]);
+    const table = buildYearTable(ledger, 2026, {
+      overrides: [
+        {
+          id: 'o',
+          year: 2026,
+          month: 5,
+          kind: 'salary',
+          itemId: byName('基本給').id,
+          amount: 500_000,
+        },
+      ],
+    });
     expect(table.cells.get('05S')?.get(byName('基本給').id)).toEqual({
       amount: 500_000,
       source: 'override',
@@ -276,5 +280,128 @@ describe('furusatoWarnings', () => {
   it('reminds of the January 10 deadline', () => {
     const w = furusatoWarnings([d(1, { oneStop: 'none' })], 2026, false, '2026-12-20');
     expect(w.some((x) => x.message.includes('2027-01-10'))).toBe(true);
+  });
+});
+
+describe('F-11 standard remuneration', () => {
+  const rule = getParams(2025).socialInsurance.value;
+  const slip = (
+    year: number,
+    month: number,
+    base: number,
+    overtime: number,
+    health: number,
+  ): SlipSpec => ({
+    year,
+    month,
+    pay: overtime > 0 ? { 基本給: base, 時間外勤務手当: overtime } : { 基本給: base },
+    ded: { 健康保険: health, 厚生年金: 41_175, 雇用保険: 2_700, 所得税: 20_000 },
+  });
+  const history = [
+    ...[9, 10, 11, 12].map((m) => slip(2024, m, 450_000, 0, 20_000)),
+    ...[1, 2, 3].map((m) => slip(2025, m, 450_000, 0, 22_000)),
+  ];
+  // Overtime raises the April–June average without a fixed-wage change → 定時決定 only.
+  const { ledger } = ledgerOf([
+    ...history,
+    ...[4, 5, 6].map((m) => slip(2025, m, 450_000, 50_000, 22_000)),
+  ]);
+
+  it('finds grades and rounds the employee share (50銭以下切捨て)', () => {
+    expect(gradeOf(rule.healthGrades, 1_046_509).amount).toBe(1_030_000);
+    expect(gradeOf(rule.healthGrades, 30_000).amount).toBe(58_000);
+    expect(gradeOf(rule.pensionGrades, 1_046_509).amount).toBe(650_000);
+    expect(employeePremium(650_000, 0.0915)).toBe(59_475);
+    expect(employeePremium(1_030_000, 0.00115)).toBe(1_184);
+    expect(employeePremium(1_030_100, 0.00115)).toBe(1_185);
+  });
+  it('estimates the health rate from the premium and the remuneration two months before', () => {
+    expect(estimateRate(ledger, byName('健康保険'), 2025, rule)).toBe(0.05);
+  });
+  it('applies the April–June average (定時決定) from the October slip', () => {
+    const plan = remunerationPlan(ledger, 2025, rule, undefined);
+    expect(plan?.revisions.map((r) => [r.kind, r.fromMonth])).toEqual([['regular', 10]]);
+    expect(plan?.revisions[0]?.averageRemuneration).toBe(500_000);
+    const table = buildYearTable(ledger, 2025, { plan });
+    expect(table.cells.get('09S')?.get(byName('健康保険').id)?.amount).toBe(22_000);
+    expect(table.cells.get('10S')?.get(byName('健康保険').id)).toMatchObject({
+      amount: 25_000,
+      method: 'standardRemuneration',
+    });
+    expect(table.cells.get('10S')?.get(byName('厚生年金').id)?.amount).toBe(45_750);
+  });
+  it('applies 随時改定 after a fixed-wage change and skips the same year 定時決定', () => {
+    const raised = ledgerOf([
+      ...history,
+      ...[4, 5, 6].map((m) => slip(2025, m, 500_000, 0, 22_000)),
+    ]).ledger;
+    const plan = remunerationPlan(raised, 2025, rule, undefined);
+    expect(plan?.revisions.map((r) => [r.kind, r.fromMonth])).toEqual([['occasional', 8]]);
+    const table = buildYearTable(raised, 2025, { plan });
+    expect(table.cells.get('08S')?.get(byName('健康保険').id)?.amount).toBe(25_000);
+  });
+  it('prefers a manual rate', () => {
+    const plan = remunerationPlan(ledger, 2025, rule, {
+      year: 2025,
+      hasHealthCheckup: false,
+      selfIsSpeciallyDisabled: false,
+      healthRate: 0.04,
+    });
+    expect(plan?.rates.health).toEqual({ rate: 0.04, source: 'manual' });
+  });
+});
+
+describe('leave months', () => {
+  const specs = [
+    {
+      year: 2025,
+      month: 12,
+      kind: 'bonus' as const,
+      pay: { 賞与基本給: 800_000 },
+      ded: { 所得税: 80_000 },
+    },
+    ...[1, 2, 3].map((m) => salary(2026, m)),
+  ];
+  const { ledger } = ledgerOf(specs);
+  it('zeroes salary and bonus forecasts in leave months but keeps manual overrides', () => {
+    const table = buildYearTable(ledger, 2026, {
+      leaveMonths: [10, 11, 12],
+      overrides: [
+        {
+          id: 'o',
+          year: 2026,
+          month: 12,
+          kind: 'bonus',
+          itemId: byName('賞与基本給').id,
+          amount: 300_000,
+        },
+      ],
+    });
+    expect(table.cells.get('10S')?.size).toBe(0);
+    expect(table.cells.get('12B')?.get(byName('賞与基本給').id)?.amount).toBe(300_000);
+    expect(table.cells.get('12B')?.get(byName('所得税').id)).toBeUndefined();
+    const totals = yearTotals(ledger, table);
+    expect(totals.leaveSalaryMonths).toBe(3);
+    expect(totals.forecastSalaryMonths).toBe(6);
+    expect(totals.taxablePay).toBe(450_000 * 9 + 300_000);
+  });
+  it('flows into the annual summary from the year setting', () => {
+    const records = {
+      ...EMPTY_RECORDS,
+      yearSettings: [
+        {
+          year: 2026,
+          hasHealthCheckup: false,
+          selfIsSpeciallyDisabled: false,
+          leaveMonths: [10, 11, 12],
+        },
+      ],
+    };
+    const withLeave = computeAnnual(ledger, 2026, records);
+    const without = computeAnnual(ledger, 2026, EMPTY_RECORDS);
+    expect(withLeave.totals.taxablePay).toBeLessThan(without.totals.taxablePay);
+    expect(withLeave.estimate.furusato.withoutMedical.limit).toBeLessThan(
+      without.estimate.furusato.withoutMedical.limit,
+    );
   });
 });
