@@ -12,10 +12,17 @@ import {
   type TaxpayerInput,
 } from '../src/engine';
 import { parseWithholdingSlip, type WithholdingSlipData } from '../src/import/withholding';
+import { parsePayslip } from '../src/import/payslip';
+import { planImport } from '../src/domain/importer';
+import { seedItems } from '../src/domain/itemSeeds';
+import { buildLedger } from '../src/domain/ledger';
+import { computeAnnual, EMPTY_RECORDS } from '../src/domain/annual';
+import type { InsuranceContract } from '../src/domain/types';
 import { readPdfText } from './lib/node-pdf';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WITHHOLDING_DIR = path.join(ROOT, 'private', 'withholding');
+const PAYSLIP_DIR = path.join(ROOT, 'private', 'payslips');
 
 interface Check {
   label: string;
@@ -104,10 +111,130 @@ export async function verifyWithholdingSlips(): Promise<boolean> {
   return ok;
 }
 
+async function readSlips(): Promise<WithholdingSlipData[]> {
+  const files = (await readdir(WITHHOLDING_DIR)).filter((f) => f.toLowerCase().endsWith('.pdf'));
+  const slips = await Promise.all(
+    files.map(async (f) => parseWithholdingSlip(await readPdfText(path.join(WITHHOLDING_DIR, f)))),
+  );
+  return slips.filter((s) => SUPPORTED_YEARS.includes(s.year));
+}
+
+function contractsFrom(slips: readonly WithholdingSlipData[]): InsuranceContract[] {
+  const kinds = [
+    ['generalNew', 'generalLife', false],
+    ['generalOld', 'generalLife', true],
+    ['careMedical', 'careMedical', false],
+    ['pensionNew', 'pension', false],
+    ['pensionOld', 'pension', true],
+  ] as const;
+  return kinds.map(([field, kind, isOld]) => ({
+    id: field,
+    kind,
+    isOld,
+    company: '源泉徴収票の内訳',
+    premiumByYear: Object.fromEntries(
+      slips.map((s) => [String(s.year), s.lifeInsurancePremiums?.[field] ?? 0]),
+    ),
+    certificateReceivedOn: {},
+    submittedForYearEnd: {},
+  }));
+}
+
+/** Bulk-imports every payslip and checks the annual pipeline against the withholding slips. */
+async function verifyPayslips(): Promise<boolean> {
+  const parsed = [];
+  for (const year of (await readdir(PAYSLIP_DIR)).sort()) {
+    for (const file of (await readdir(path.join(PAYSLIP_DIR, year))).sort()) {
+      parsed.push({
+        fileName: file,
+        slip: parsePayslip(await readPdfText(path.join(PAYSLIP_DIR, year, file))),
+      });
+    }
+  }
+  let seq = 0;
+  const plan = planImport(
+    parsed,
+    seedItems(),
+    [],
+    [],
+    () => `id-${++seq}`,
+    new Date().toISOString(),
+  );
+  const rejected = plan.slips.filter((s) => !s.ok);
+  console.log(
+    `明細 ${plan.slips.length}件：検算・累計照合 OK ${plan.slips.length - rejected.length}件 / NG ${rejected.length}件`,
+  );
+  for (const r of rejected) {
+    const failed = r.checks.filter((c) => !c.ok).map((c) => c.name);
+    console.log(`  NG ${r.fileName}: ${[...failed, ...r.cumulativeIssues].join('; ')}`);
+  }
+  if (plan.newItems.length > 0) {
+    console.log(`  分類待ちの新項目: ${plan.newItems.map((i) => i.name).join('、')}`);
+  }
+  const items = [...seedItems(), ...plan.newItems];
+  const ok = plan.slips.filter((s) => s.ok);
+  const ledger = buildLedger(
+    items,
+    ok.map((s) => s.payslip),
+    ok.flatMap((s) => s.lines),
+  );
+  const slips = await readSlips();
+  const records = { ...EMPTY_RECORDS, insurance: contractsFrom(slips) };
+  let allOk = rejected.length === 0;
+  console.log('== 明細の年間集計 × 源泉徴収票 ==');
+  for (const slip of slips) {
+    const annual = computeAnnual(ledger, slip.year, records);
+    const yearEndActual = annual.totals.yearEndAdjustment;
+    const checks: Check[] = [
+      {
+        label: '支払金額（課税支給の年合計）',
+        expected: slip.paymentAmount,
+        actual: annual.totals.taxablePay,
+      },
+      {
+        label: '社会保険料等の金額',
+        expected: slip.socialInsurance,
+        actual: annual.totals.socialInsurance,
+      },
+      {
+        label: '源泉徴収税額',
+        expected: slip.withheldTax,
+        actual: annual.estimate.yearEnd.annualTax,
+      },
+      {
+        label: '年調過不足額（12月明細）',
+        expected: yearEndActual,
+        actual: annual.estimate.yearEndBalance,
+      },
+    ];
+    const failed = checks.filter((c) => c.expected !== c.actual);
+    allOk &&= failed.length === 0 && !annual.hasForecast;
+    console.log(
+      `${failed.length === 0 ? '✓' : '✗'} ${slip.year}年分（予測を含む: ${annual.hasForecast ? 'あり' : 'なし'}）`,
+    );
+    for (const c of checks) {
+      const mark = c.expected === c.actual ? '  ok' : '  NG';
+      console.log(
+        `${mark} ${c.label}: 票/明細 ${c.expected.toLocaleString()} / 計算 ${c.actual.toLocaleString()}`,
+      );
+    }
+  }
+  const latest = Math.max(...SUPPORTED_YEARS);
+  const current = computeAnnual(ledger, latest, records);
+  console.log(
+    `参考 ${latest}年分（予測 給与${current.totals.forecastSalaryMonths}か月・賞与${current.totals.forecastBonusCount}回）: ` +
+      `課税支給 ${current.totals.taxablePay.toLocaleString()} / 年税額 ${current.estimate.yearEnd.annualTax.toLocaleString()} / ` +
+      `年調過不足 ${current.estimate.yearEndBalance.toLocaleString()} / ふるさと上限 ${current.estimate.furusato.withoutMedical.limit.toLocaleString()}` +
+      `（${latest}年分の生命保険料は前年の内訳を仮置きしていないため 0）`,
+  );
+  return allOk;
+}
+
 async function main(): Promise<void> {
   console.log('== 源泉徴収票 × 計算エンジン ==');
   const slipsOk = await verifyWithholdingSlips();
-  if (!slipsOk) process.exit(1);
+  const payslipsOk = await verifyPayslips();
+  if (!slipsOk || !payslipsOk) process.exit(1);
 }
 
 main().catch((e: unknown) => {

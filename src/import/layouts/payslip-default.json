@@ -1,0 +1,29 @@
+{
+  "name": "給与・賞与明細書（A4横・4ブロック格子）",
+  "note": "requirements 6.2。項目の位置は固定しない。ブロックは左端の縦書き見出し（支給／控除／勤怠／記事）で判定する",
+  "blockMarkers": {
+    "payment": ["支", "給"],
+    "deduction": ["控", "除"],
+    "attendance": ["勤", "怠"],
+    "notes": ["記", "事"]
+  },
+  "markerMaxX": 45,
+  "maxLabelDistanceFromBlock": 45,
+  "amountRowOffset": { "min": 10, "max": 22 },
+  "maxAmountRightOfLabelCenter": 60,
+  "titles": { "salary": "給与明細書", "bonus": "賞与明細書" },
+  "totals": {
+    "payment": ["支給合計"],
+    "socialInsurance": ["社会保険料合計", "社会保険合計"],
+    "deduction": ["控除合計"],
+    "net": ["差引支給額"],
+    "bankTransfer": ["銀行振込額"]
+  },
+  "socialInsuranceItems": ["健康保険", "厚生年金", "雇用保険", "介護保険", "子育て支援金"],
+  "cumulative": {
+    "payment": "支給累計",
+    "socialInsurance": "社会保険累計",
+    "incomeTax": "所得税累計"
+  },
+  "ignoredNoteItems": ["第１口座", "課税対象額"]
+}
