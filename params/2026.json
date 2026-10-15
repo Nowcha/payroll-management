@@ -1,0 +1,543 @@
+{
+  "year": 2026,
+  "incomeTax": {
+    "employmentIncomeDeduction": {
+      "value": {
+        "brackets": [
+          {
+            "upTo": 2200000,
+            "rate": 0,
+            "add": 740000
+          },
+          {
+            "upTo": 3600000,
+            "rate": 0.3,
+            "add": 80000
+          },
+          {
+            "upTo": 6600000,
+            "rate": 0.2,
+            "add": 440000
+          },
+          {
+            "upTo": 8500000,
+            "rate": 0.1,
+            "add": 1100000
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 1950000
+          }
+        ]
+      },
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1410.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15"
+    },
+    "appendix5": {
+      "value": {
+        "upTo": 6600000,
+        "zeroBelow": 741000,
+        "roundingFrom": 2200000,
+        "unit": 4000,
+        "fixedRows": [
+          {
+            "from": 2191000,
+            "to": 2193000,
+            "income": 1451000
+          },
+          {
+            "from": 2193000,
+            "to": 2196000,
+            "income": 1453000
+          },
+          {
+            "from": 2196000,
+            "to": 2200000,
+            "income": 1456000
+          }
+        ]
+      },
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1410.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "国税庁 No.1410（注2）の表どおり。220万円以上は4,000円未満切捨て後の金額に速算式を適用"
+    },
+    "basicDeduction": {
+      "value": [
+        {
+          "upTo": 4890000,
+          "amount": 1040000
+        },
+        {
+          "upTo": 6550000,
+          "amount": 670000
+        },
+        {
+          "upTo": 23500000,
+          "amount": 620000
+        },
+        {
+          "upTo": 24000000,
+          "amount": 480000
+        },
+        {
+          "upTo": 24500000,
+          "amount": 320000
+        },
+        {
+          "upTo": 25000000,
+          "amount": 160000
+        },
+        {
+          "upTo": null,
+          "amount": 0
+        }
+      ],
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1199.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "区分の基準は合計所得金額"
+    },
+    "incomeAdjustmentDeduction": {
+      "value": {
+        "salaryThreshold": 8500000,
+        "salaryCap": 10000000,
+        "rate": 0.1
+      },
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1411.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "給与収入850万円超で、本人が特別障害者・23歳未満の扶養親族・特別障害者の同一生計配偶者等を有する場合。1円未満切上げ。住民税の総所得金額にも反映"
+    },
+    "rateTable": {
+      "value": [
+        {
+          "upTo": 1949000,
+          "rate": 0.05,
+          "quickDeduction": 0
+        },
+        {
+          "upTo": 3299000,
+          "rate": 0.1,
+          "quickDeduction": 97500
+        },
+        {
+          "upTo": 6949000,
+          "rate": 0.2,
+          "quickDeduction": 427500
+        },
+        {
+          "upTo": 8999000,
+          "rate": 0.23,
+          "quickDeduction": 636000
+        },
+        {
+          "upTo": 17999000,
+          "rate": 0.33,
+          "quickDeduction": 1536000
+        },
+        {
+          "upTo": 39999000,
+          "rate": 0.4,
+          "quickDeduction": 2796000
+        },
+        {
+          "upTo": null,
+          "rate": 0.45,
+          "quickDeduction": 4796000
+        }
+      ],
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/2260.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15"
+    },
+    "reconstructionRate": {
+      "value": 0.021,
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/2260.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "令和19年分まで2.1%。令和9年分以後は1.1%＋防衛特別所得税1%に組み替え"
+    },
+    "lifeInsurance": {
+      "value": {
+        "newTiers": [
+          {
+            "upTo": 20000,
+            "rate": 1,
+            "add": 0
+          },
+          {
+            "upTo": 40000,
+            "rate": 0.5,
+            "add": 10000
+          },
+          {
+            "upTo": 80000,
+            "rate": 0.25,
+            "add": 20000
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 40000
+          }
+        ],
+        "newCap": 40000,
+        "oldTiers": [
+          {
+            "upTo": 25000,
+            "rate": 1,
+            "add": 0
+          },
+          {
+            "upTo": 50000,
+            "rate": 0.5,
+            "add": 12500
+          },
+          {
+            "upTo": 100000,
+            "rate": 0.25,
+            "add": 25000
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 50000
+          }
+        ],
+        "oldCap": 50000,
+        "mixedCap": 40000,
+        "totalCap": 120000,
+        "under23": {
+          "tiers": [
+            {
+              "upTo": 30000,
+              "rate": 1,
+              "add": 0
+            },
+            {
+              "upTo": 60000,
+              "rate": 0.5,
+              "add": 15000
+            },
+            {
+              "upTo": 120000,
+              "rate": 0.25,
+              "add": 30000
+            },
+            {
+              "upTo": null,
+              "rate": 0,
+              "add": 60000
+            }
+          ],
+          "cap": 60000,
+          "mixedCap": 60000
+        }
+      },
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1140.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "控除額の1円未満は切上げ。23歳未満の扶養親族がいる場合の新生命保険料の特例は令和8・9年分"
+    },
+    "earthquakeInsurance": {
+      "value": {
+        "earthquakeTiers": [
+          {
+            "upTo": 50000,
+            "rate": 1,
+            "add": 0
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 50000
+          }
+        ],
+        "earthquakeCap": 50000,
+        "oldLongTermTiers": [
+          {
+            "upTo": 10000,
+            "rate": 1,
+            "add": 0
+          },
+          {
+            "upTo": 20000,
+            "rate": 0.5,
+            "add": 5000
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 15000
+          }
+        ],
+        "oldLongTermCap": 15000,
+        "totalCap": 50000
+      },
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1145.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15"
+    },
+    "dependents": {
+      "value": {
+        "incomeLimit": 620000,
+        "general": 380000,
+        "specific": 630000,
+        "elderly": 480000,
+        "elderlyCohabiting": 580000
+      },
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1180.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "年齢は12月31日現在。16歳未満は控除対象外"
+    },
+    "fixedTaxReduction": null,
+    "medical": {
+      "value": {
+        "floorAmount": 100000,
+        "floorRate": 0.05,
+        "cap": 2000000,
+        "selfMedicationFloor": 12000,
+        "selfMedicationCap": 88000
+      },
+      "sourceUrl": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1120.htm",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "セルフメディケーションは No.1129"
+    },
+    "rounding": {
+      "value": {
+        "taxableIncomeUnit": 1000,
+        "annualTaxUnit": 100
+      },
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/jumin_shotoku.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "課税所得は1,000円未満、年税額は100円未満切捨て"
+    }
+  },
+  "residentTax": {
+    "fiscalYearLabel": "令和9年度",
+    "employmentIncomeDeduction": {
+      "value": {
+        "brackets": [
+          {
+            "upTo": 2200000,
+            "rate": 0,
+            "add": 740000
+          },
+          {
+            "upTo": 3600000,
+            "rate": 0.3,
+            "add": 80000
+          },
+          {
+            "upTo": 6600000,
+            "rate": 0.2,
+            "add": 440000
+          },
+          {
+            "upTo": 8500000,
+            "rate": 0.1,
+            "add": 1100000
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 1950000
+          }
+        ]
+      },
+      "sourceUrl": "https://www.city.owase.lg.jp/0000024998.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "所得税の同年分と同額（令和9年度は最低保障74万円、うち5万円は令和9・10年度の時限）"
+    },
+    "basicDeduction": {
+      "value": [
+        {
+          "upTo": 24000000,
+          "amount": 430000
+        },
+        {
+          "upTo": 24500000,
+          "amount": 290000
+        },
+        {
+          "upTo": 25000000,
+          "amount": 150000
+        },
+        {
+          "upTo": null,
+          "amount": 0
+        }
+      ],
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/zeigakukojo/choseikojo.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "令和9年度も変更なし（尾鷲市 令和9年度改正一覧）"
+    },
+    "incomeLevyRate": {
+      "value": {
+        "prefectural": 0.04,
+        "municipal": 0.06
+      },
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/jumin_shotoku.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "特別区：都民税4%＋特別区民税6%"
+    },
+    "lifeInsurance": {
+      "value": {
+        "newTiers": [
+          {
+            "upTo": 12000,
+            "rate": 1,
+            "add": 0
+          },
+          {
+            "upTo": 32000,
+            "rate": 0.5,
+            "add": 6000
+          },
+          {
+            "upTo": 56000,
+            "rate": 0.25,
+            "add": 14000
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 28000
+          }
+        ],
+        "newCap": 28000,
+        "oldTiers": [
+          {
+            "upTo": 15000,
+            "rate": 1,
+            "add": 0
+          },
+          {
+            "upTo": 40000,
+            "rate": 0.5,
+            "add": 7500
+          },
+          {
+            "upTo": 70000,
+            "rate": 0.25,
+            "add": 17500
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 35000
+          }
+        ],
+        "oldCap": 35000,
+        "mixedCap": 28000,
+        "totalCap": 70000
+      },
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/shotokukojo/seimeihokenryokojo.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "23歳未満特例なし。控除額の1円未満は切上げ"
+    },
+    "earthquakeInsurance": {
+      "value": {
+        "earthquakeTiers": [
+          {
+            "upTo": 50000,
+            "rate": 0.5,
+            "add": 0
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 25000
+          }
+        ],
+        "earthquakeCap": 25000,
+        "oldLongTermTiers": [
+          {
+            "upTo": 5000,
+            "rate": 1,
+            "add": 0
+          },
+          {
+            "upTo": 15000,
+            "rate": 0.5,
+            "add": 2500
+          },
+          {
+            "upTo": null,
+            "rate": 0,
+            "add": 10000
+          }
+        ],
+        "oldLongTermCap": 10000,
+        "totalCap": 25000
+      },
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/shotokukojo/jishinhokenryoukojo.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15"
+    },
+    "dependents": {
+      "value": {
+        "incomeLimit": 620000,
+        "general": 330000,
+        "specific": 450000,
+        "elderly": 380000,
+        "elderlyCohabiting": 450000
+      },
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/jumin_shotoku.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "所得要件は所得税の同年分と同額（令和9年度は62万円：尾鷲市）"
+    },
+    "adjustmentDeduction": {
+      "value": {
+        "threshold": 2000000,
+        "rate": 0.05,
+        "minimum": 2500,
+        "totalIncomeLimit": 25000000,
+        "differences": {
+          "basic": 50000,
+          "dependentGeneral": 50000,
+          "dependentSpecific": 180000,
+          "dependentElderly": 100000,
+          "dependentElderlyCohabiting": 130000
+        }
+      },
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/zeigakukojo/choseikojo.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15",
+      "note": "特別区民税3%・都民税2%に按分"
+    },
+    "rounding": {
+      "value": {
+        "taxableIncomeUnit": 1000
+      },
+      "sourceUrl": "https://www.city.nerima.tokyo.jp/kurashi/zei/jyuminzei/jumin_shotoku.html",
+      "status": "確認済",
+      "checkedOn": "2026-10-15"
+    }
+  },
+  "donation": {
+    "value": {
+      "selfPay": 2000,
+      "incomeTaxCapRate": 0.4,
+      "residentBasicCapRate": 0.3,
+      "residentBasicRate": 0.1,
+      "specialCapRate": 0.2,
+      "incomeTaxRateMultiplier": 1.021
+    },
+    "sourceUrl": "https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/furusato/mechanism/deduction.html",
+    "status": "確認済",
+    "checkedOn": "2026-10-15",
+    "note": "寄附金控除（所得税）は国税庁 No.1150。特例分の所得税率は住民税課税総所得−人的控除差調整額で判定"
+  }
+}

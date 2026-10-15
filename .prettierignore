@@ -1,0 +1,9 @@
+dist
+node_modules
+private
+coverage
+AGENTS.md
+CLAUDE.md
+docs
+params
+package-lock.json
