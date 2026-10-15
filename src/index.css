@@ -1,1 +1,61 @@
 @import 'tailwindcss';
+
+/* Ledger-paper direction: warm paper, ink text, semantic teal (refund) / vermilion (owed, alerts). */
+@theme {
+  --color-paper: oklch(97.5% 0.012 85);
+  --color-paper-deep: oklch(94% 0.018 85);
+  --color-ink: oklch(24% 0.02 260);
+  --color-ink-soft: oklch(45% 0.02 260);
+  --color-rule: oklch(86% 0.02 85);
+  --color-refund: oklch(48% 0.09 175);
+  --color-refund-soft: oklch(93% 0.04 175);
+  --color-owed: oklch(55% 0.18 35);
+  --color-owed-soft: oklch(94% 0.04 35);
+  --color-forecast: oklch(90% 0.05 250);
+  --color-caution: oklch(70% 0.14 85);
+
+  --font-sans:
+    'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'Meiryo',
+    system-ui, sans-serif;
+  --font-figures: 'SF Mono', 'Cascadia Mono', 'Consolas', 'Menlo', ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    min-height: 100dvh;
+    background-image: linear-gradient(var(--color-rule) 1px, transparent 1px);
+    background-size: 100% 2.25rem;
+    background-attachment: fixed;
+    background-color: var(--color-paper);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-refund);
+    outline-offset: 2px;
+  }
+  input,
+  select,
+  textarea {
+    background: white;
+  }
+}
+
+@layer components {
+  .figures {
+    font-family: var(--font-figures);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .forecast-cell {
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--color-forecast) 0 4px,
+      transparent 4px 8px
+    );
+  }
+}

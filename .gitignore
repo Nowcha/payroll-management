@@ -19,3 +19,6 @@ coverage/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Generated pdf.js assets
+public/pdfjs/
