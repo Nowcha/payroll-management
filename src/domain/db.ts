@@ -3,6 +3,7 @@ import { seedItems } from './itemSeeds';
 import type {
   FamilyMember,
   ForecastOverride,
+  FurusatoScenarioRecord,
   FurusatoDonation,
   InsuranceContract,
   ItemMaster,
@@ -28,6 +29,7 @@ export class PayrollDb extends Dexie {
   reimbursements!: EntityTable<Reimbursement, 'id'>;
   donations!: EntityTable<FurusatoDonation, 'id'>;
   yearSettings!: EntityTable<YearSetting, 'year'>;
+  furusatoScenarios!: EntityTable<FurusatoScenarioRecord, 'id'>;
 
   constructor(name = 'payroll-management') {
     super(name);
@@ -45,6 +47,7 @@ export class PayrollDb extends Dexie {
       donations: 'id, date',
       yearSettings: 'year',
     });
+    this.version(2).stores({ furusatoScenarios: 'id, year' });
     // Runs once, inside the creation transaction, so concurrent renders cannot double-seed.
     this.on('populate', (tx) => {
       void tx.table('items').bulkAdd(seedItems());
@@ -65,7 +68,11 @@ export const TABLE_NAMES = [
   'reimbursements',
   'donations',
   'yearSettings',
+  'furusatoScenarios',
 ] as const;
+
+/** Tables added after the first release; older backups may not contain them. */
+export const OPTIONAL_BACKUP_TABLES: readonly string[] = ['furusatoScenarios'];
 
 export type TableName = (typeof TABLE_NAMES)[number];
 

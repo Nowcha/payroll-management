@@ -32,6 +32,16 @@ describe('backup', () => {
     expect(await db.items.count()).toBe(plain.tables.items.length);
     db.close();
   });
+  it('accepts backups made before the scenario table existed', async () => {
+    const db = new PayrollDb(`test-${Math.random()}`);
+    await db.open();
+    const plain = await exportDb(db, '2026-10-15T00:00:00Z');
+    const older: Record<string, unknown[]> = { ...plain.tables };
+    delete older.furusatoScenarios;
+    const restored = await readBackup(JSON.stringify({ ...plain, tables: older }), '');
+    expect(restored.tables.furusatoScenarios).toEqual([]);
+    db.close();
+  });
   it('rejects foreign files', async () => {
     await expect(readBackup('{"hello":1}', '')).rejects.toThrow(
       /バックアップファイルではありません/,

@@ -204,6 +204,27 @@ export interface FurusatoDonation {
   appliedOn?: string;
 }
 
+/** A saved furusato what-if (F-22) with the figures at the time it was saved. */
+export interface FurusatoScenarioRecord {
+  id: string;
+  year: number;
+  name: string;
+  savedAt: string;
+  input: { extraTaxablePay: number; extraDonation: number; extraMedical: number };
+  /** Snapshot when saved; the screen also shows the figures recomputed with today's data. */
+  result: {
+    limit: number;
+    recommended: number;
+    remaining: number;
+    annualTax: number;
+    salary: number;
+    donations: number;
+    leaveMonths: number[];
+    hasForecast: boolean;
+  };
+  note?: string;
+}
+
 /** Per-year settings (health check-up for self-medication, scenario values …). */
 export interface YearSetting {
   year: number;
