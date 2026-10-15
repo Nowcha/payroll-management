@@ -209,6 +209,15 @@ describe('annual', () => {
   });
 });
 
+describe('annual without data', () => {
+  it('does not count an empty year as containing forecasts', () => {
+    const { ledger } = ledgerOf([]);
+    const annual = computeAnnual(ledger, 2026, EMPTY_RECORDS);
+    expect(annual.totals.forecastSalaryMonths).toBe(0);
+    expect(annual.hasForecast).toBe(false);
+  });
+});
+
 describe('compare', () => {
   const { ledger } = ledgerOf([
     salary(2025, 3, 50_000),

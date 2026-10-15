@@ -229,7 +229,7 @@ export function yearTotals(ledger: Ledger, table: YearTable): YearTotals {
 export function withYearEndForecast(ledger: Ledger, table: YearTable, amount: number): YearTable {
   const dec = slotId({ month: 12, kind: 'salary' });
   const item = ledger.items.find((i) => i.category === 'yearEndAdjustment');
-  if (!item || table.actualSlotIds.has(dec)) return table;
+  if (!item || amount === 0 || table.actualSlotIds.has(dec)) return table;
   const cells = new Map(table.cells);
   const decCells = new Map(cells.get(dec) ?? []);
   decCells.set(item.id, { amount, source: 'forecast', method: 'yearEnd' });
