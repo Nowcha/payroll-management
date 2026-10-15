@@ -8,10 +8,11 @@ import {
   type Ledger,
   type SlotKey,
 } from './ledger';
+import { premiumsAt, type RemunerationPlan } from './socialInsurance';
 import type { ForecastMethod, ForecastOverride, ItemMaster, TaxCategory } from './types';
 
 export type CellSource = 'actual' | 'forecast' | 'override';
-export type CellMethod = ForecastMethod | 'taxRate' | 'yearEnd';
+export type CellMethod = ForecastMethod | 'taxRate' | 'yearEnd' | 'standardRemuneration';
 
 export interface Cell {
   amount: number;
@@ -25,6 +26,16 @@ export interface YearTable {
   /** slotId → itemId → cell. Items absent from a slot are zero. */
   cells: Map<string, Map<string, Cell>>;
   actualSlotIds: Set<string>;
+  /** Forecast slots inside a leave period (no pay, social insurance exempt). */
+  leaveSlotIds: Set<string>;
+}
+
+export interface TableOptions {
+  overrides?: readonly ForecastOverride[];
+  /** Salary months without pay (育児休業など); bonuses in these months are zero as well. */
+  leaveMonths?: readonly number[];
+  /** F-11 定時決定 plan applied from its reflectFromMonth. */
+  plan?: RemunerationPlan | null;
 }
 
 const HISTORY_FOR_AVERAGE = 3;
@@ -120,7 +131,12 @@ function recentWithholdingRate(ledger: Ledger, year: number, month: number): num
   return pay > 0 ? tax / pay : 0;
 }
 
-function forecastSlot(ledger: Ledger, year: number, slot: SlotKey): Map<string, Cell> {
+function forecastSlot(
+  ledger: Ledger,
+  year: number,
+  slot: SlotKey,
+  plan: RemunerationPlan | null,
+): Map<string, Cell> {
   const cells = new Map<string, Cell>();
   const forecastable = ledger.items.filter(
     (i) =>
@@ -141,6 +157,14 @@ function forecastSlot(ledger: Ledger, year: number, slot: SlotKey): Map<string, 
     const cell = forecastSalaryItem(ledger, item, year, slot.month);
     if (cell) cells.set(item.id, cell);
   }
+  const revised = premiumsAt(plan, slot.month);
+  if (revised) {
+    for (const [itemId, amount] of revised) {
+      if (amount > 0)
+        cells.set(itemId, { amount, source: 'forecast', method: 'standardRemuneration' });
+      else cells.delete(itemId);
+    }
+  }
   setTaxCells(ledger, cells, recentWithholdingRate(ledger, year, slot.month));
   return cells;
 }
@@ -156,11 +180,13 @@ function setTaxCells(ledger: Ledger, cells: Map<string, Cell>, rate: number): vo
 export function buildYearTable(
   ledger: Ledger,
   year: number,
-  overrides: readonly ForecastOverride[] = [],
+  options: TableOptions = {},
 ): YearTable {
+  const { overrides = [], leaveMonths = [], plan = null } = options;
   const slots = yearSlots(ledger, year);
   const cells = new Map<string, Map<string, Cell>>();
   const actualSlotIds = new Set<string>();
+  const leaveSlotIds = new Set<string>();
   for (const slot of slots) {
     const id = slotId(slot);
     const actual = actualAmounts(ledger, year, slot);
@@ -174,7 +200,9 @@ export function buildYearTable(
       );
       continue;
     }
-    const forecast = forecastSlot(ledger, year, slot);
+    const onLeave = leaveMonths.includes(slot.month);
+    if (onLeave) leaveSlotIds.add(id);
+    const forecast = onLeave ? new Map<string, Cell>() : forecastSlot(ledger, year, slot, plan);
     for (const o of overrides) {
       if (o.year === year && o.month === slot.month && o.kind === slot.kind) {
         forecast.set(o.itemId, { amount: o.amount, source: 'override' });
@@ -182,7 +210,7 @@ export function buildYearTable(
     }
     cells.set(id, forecast);
   }
-  return { year, slots, cells, actualSlotIds };
+  return { year, slots, cells, actualSlotIds, leaveSlotIds };
 }
 
 export interface YearTotals {
@@ -195,6 +223,7 @@ export interface YearTotals {
   residentTax: number;
   forecastSalaryMonths: number;
   forecastBonusCount: number;
+  leaveSalaryMonths: number;
 }
 
 export function yearTotals(ledger: Ledger, table: YearTable): YearTotals {
@@ -207,11 +236,13 @@ export function yearTotals(ledger: Ledger, table: YearTable): YearTotals {
     residentTax: 0,
     forecastSalaryMonths: 0,
     forecastBonusCount: 0,
+    leaveSalaryMonths: 0,
   };
   for (const slot of table.slots) {
     const id = slotId(slot);
     const slotCells = table.cells.get(id) ?? new Map<string, Cell>();
-    if (!table.actualSlotIds.has(id) && slotCells.size > 0) {
+    if (table.leaveSlotIds.has(id) && slot.kind === 'salary') totals.leaveSalaryMonths++;
+    if (!table.actualSlotIds.has(id) && !table.leaveSlotIds.has(id) && slotCells.size > 0) {
       if (slot.kind === 'salary') totals.forecastSalaryMonths++;
       else totals.forecastBonusCount++;
     }

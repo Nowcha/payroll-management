@@ -170,9 +170,29 @@ export interface ResidentTaxParams {
   rounding: Sourced<{ taxableIncomeUnit: number }>;
 }
 
+export interface StandardRemunerationGrade {
+  /** 標準報酬月額. */
+  amount: number;
+  /** Lower bound of monthly remuneration for this grade (inclusive). */
+  from: number;
+}
+
+/** 社会保険料の再予測（定時決定, requirements F-11）に使う法定の値. */
+export interface SocialInsuranceRule {
+  healthGrades: StandardRemunerationGrade[];
+  pensionGrades: StandardRemunerationGrade[];
+  pensionEmployeeRate: number;
+  childSupportEmployeeRate: number;
+  /** First payslip month that deducts the child-support levy (April premium, collected in May). */
+  childSupportFromMonth: number;
+  /** First payslip month reflecting the 定時決定 (September premium, collected in October). */
+  reflectFromMonth: number;
+}
+
 export interface TaxParams {
   year: number;
   incomeTax: IncomeTaxParams;
   residentTax: ResidentTaxParams;
   donation: Sourced<DonationRule>;
+  socialInsurance: Sourced<SocialInsuranceRule>;
 }

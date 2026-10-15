@@ -16,6 +16,7 @@ const METHOD_LABEL: Record<string, string> = {
   fixed: '固定額',
   taxRate: '源泉税率',
   yearEnd: '年調見込み',
+  standardRemuneration: '標準報酬（F-11）',
 };
 
 interface Selected {
@@ -100,6 +101,9 @@ export function PayslipGrid({ table }: { table: YearTable }) {
               {table.slots.map((s) => (
                 <th key={slotId(s)} className={`${TH} text-right`}>
                   {slotLabel(s)}
+                  {table.leaveSlotIds.has(slotId(s)) && (
+                    <span className="ml-0.5 text-owed">休</span>
+                  )}
                 </th>
               ))}
               <th className={`${TH} text-right`}>年合計</th>
@@ -120,10 +124,11 @@ export function PayslipGrid({ table }: { table: YearTable }) {
                 {table.slots.map((s) => {
                   const cell = table.cells.get(slotId(s))?.get(item.id);
                   const isActual = table.actualSlotIds.has(slotId(s));
+                  const isLeave = table.leaveSlotIds.has(slotId(s));
                   return (
                     <td
                       key={slotId(s)}
-                      className={`${TD_NUM} ${isActual ? '' : 'forecast-cell cursor-pointer hover:outline hover:outline-1 hover:outline-ink'} ${cell?.source === 'override' ? 'font-bold' : ''}`}
+                      className={`${TD_NUM} ${isActual ? '' : `${isLeave ? 'bg-owed-soft/70' : 'forecast-cell'} cursor-pointer hover:outline hover:outline-1 hover:outline-ink`} ${cell?.source === 'override' ? 'font-bold' : ''}`}
                       title={
                         cell?.method
                           ? `予測：${METHOD_LABEL[cell.method] ?? cell.method}`
