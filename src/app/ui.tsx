@@ -68,7 +68,7 @@ export function Panel({
 }) {
   return (
     <section
-      className={`rounded-sm border border-rule bg-white/85 p-4 shadow-[3px_3px_0_var(--color-paper-deep)] ${className}`}
+      className={`min-w-0 rounded-sm border border-rule bg-white/85 p-4 shadow-[3px_3px_0_var(--color-paper-deep)] ${className}`}
     >
       {(title || aside) && (
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -107,7 +107,7 @@ export function Stat({
     <div>
       <div className="text-xs font-semibold tracking-wide text-ink-soft">{label}</div>
       <div
-        className={`${size === 'lg' ? 'text-4xl' : 'text-2xl'} font-bold leading-tight ${TONE_TEXT[tone]}`}
+        className={`${size === 'lg' ? 'text-3xl sm:text-4xl' : 'text-xl sm:text-2xl'} font-bold leading-tight ${TONE_TEXT[tone]}`}
       >
         {value}
       </div>
