@@ -378,3 +378,28 @@ describe('refund estimate', () => {
     expect(r.unconfirmed).toEqual([]);
   });
 });
+
+// Synthetic cases cross-checked on 2026-10-15 against portal simulators
+// (docs/furusato-crosscheck.md). ふるさとチョイス 詳細版 matched to the yen.
+describe('furusato limit cross-check with portal simulators', () => {
+  const limit = (salary: number, social: number, generalNew = 0): number =>
+    furusatoLimit(
+      p2026,
+      taxpayer({
+        year: 2026,
+        salary,
+        socialInsurance: social,
+        lifeInsurance: { ...NO_LIFE_PREMIUMS, generalNew },
+      }),
+      0,
+    ).value.limit;
+  it.each([
+    ['A 600万・社保90万', 6_000_000, 900_000, 0, 77_322],
+    ['B 900万・社保130万・生保10万', 9_000_000, 1_300_000, 100_000, 153_365],
+    ['B0 900万・社保130万', 9_000_000, 1_300_000, 0, 154_198],
+    ['C 1,200万・社保150万', 12_000_000, 1_500_000, 0, 245_396],
+    ['D 400万・社保60万', 4_000_000, 600_000, 0, 42_167],
+  ])('%s', (_label, salary, social, life, expected) => {
+    expect(limit(salary, social, life)).toBe(expected);
+  });
+});

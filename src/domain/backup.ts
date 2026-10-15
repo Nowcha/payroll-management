@@ -1,6 +1,6 @@
 // JSON export/import of every table, optionally encrypted with a passphrase
 // (AES-GCM 256, key derived with PBKDF2-SHA256). Uses only the Web Crypto API.
-import { TABLE_NAMES, type PayrollDb, type TableName } from './db';
+import { OPTIONAL_BACKUP_TABLES, TABLE_NAMES, type PayrollDb, type TableName } from './db';
 import { seedItems } from './itemSeeds';
 
 export const BACKUP_FORMAT = 'payroll-management-backup';
@@ -80,11 +80,12 @@ function asPlain(v: unknown): PlainBackup {
   if (!isRecord(v) || v.format !== BACKUP_FORMAT || !isRecord(v.tables)) {
     throw new BackupError('このアプリのバックアップファイルではありません');
   }
-  const tables = v.tables;
+  const tables: Record<string, unknown> = { ...v.tables };
   for (const name of TABLE_NAMES) {
+    if (tables[name] === undefined && OPTIONAL_BACKUP_TABLES.includes(name)) tables[name] = [];
     if (!Array.isArray(tables[name])) throw new BackupError(`バックアップに ${name} がありません`);
   }
-  return v as unknown as PlainBackup;
+  return { ...(v as unknown as PlainBackup), tables: tables as PlainBackup['tables'] };
 }
 
 export function isEncrypted(v: unknown): v is EncryptedBackup {
