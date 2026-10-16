@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarClock, CircleCheck } from 'lucide-react';
+import { Icon } from '../icon';
 import { useState } from 'react';
 import { furusatoWarnings, type AnnualSummary } from '../../domain/annual';
 import { slotId } from '../../domain/ledger';
@@ -181,9 +181,9 @@ export function DashboardScreen() {
           <div>
             <Badge tone={refund ? 'refund' : 'owed'}>
               {refund ? (
-                <CircleCheck className="size-3" aria-hidden />
+                <Icon name="check_circle" className="size-3.5" />
               ) : (
-                <CalendarClock className="size-3" aria-hidden />
+                <Icon name="event_upcoming" className="size-3.5" />
               )}
               {refund ? '年末調整で還付' : '年末調整で追加徴収'}
             </Badge>
@@ -228,7 +228,7 @@ export function DashboardScreen() {
               href="#/furusato"
               className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
             >
-              寄付を管理 <ArrowRight className="size-3" aria-hidden />
+              寄付を管理 <Icon name="arrow_forward" className="size-3.5" />
             </a>
           }
         >
@@ -265,7 +265,8 @@ export function DashboardScreen() {
       <Panel title="要対応" description={alerts.length === 0 ? undefined : `${alerts.length}件`}>
         {alerts.length === 0 ? (
           <p className="flex items-center gap-2 text-sm text-ink-soft">
-            <CircleCheck className="size-4 text-refund" aria-hidden /> 対応が必要な項目はありません
+            <Icon name="check_circle" filled className="size-[18px] text-refund" />{' '}
+            対応が必要な項目はありません
           </p>
         ) : (
           <ul className="grid gap-2 md:grid-cols-2">

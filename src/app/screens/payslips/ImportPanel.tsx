@@ -1,4 +1,4 @@
-import { FileUp, LoaderCircle } from 'lucide-react';
+import { Icon } from '../../icon';
 import { useState, type DragEvent } from 'react';
 import { planImport, type ImportPlan } from '../../../domain/importer';
 import { newId, saveImportPlan, saveWithholdingSlip } from '../../../domain/repo';
@@ -103,9 +103,9 @@ export function ImportPanel() {
           disabled={busy}
         />
         {busy ? (
-          <LoaderCircle className="size-6 animate-spin" aria-hidden />
+          <Icon name="progress_activity" className="size-7 animate-spin" />
         ) : (
-          <FileUp className="size-6" aria-hidden />
+          <Icon name="upload_file" className="size-7" />
         )}
         <span className="font-medium">
           {busy ? '読み取り中…' : 'PDFをドロップ、またはクリックして選択'}

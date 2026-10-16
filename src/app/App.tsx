@@ -1,20 +1,7 @@
-import {
-  BarChart3,
-  Calculator,
-  FileText,
-  Gift,
-  HeartPulse,
-  LayoutDashboard,
-  MoreHorizontal,
-  Settings,
-  ShieldCheck,
-  Users,
-  X,
-  type LucideIcon,
-} from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { SUPPORTED_YEARS } from '../engine';
 import { AppDataProvider, useAppData } from './state';
+import { Icon, type IconName } from './icon';
 import { Notice } from './ui';
 import { DashboardScreen } from './screens/Dashboard';
 import { PayslipsScreen } from './screens/Payslips';
@@ -28,7 +15,7 @@ import { SettingsScreen } from './screens/Settings';
 interface Route {
   path: string;
   label: string;
-  icon: LucideIcon;
+  icon: IconName;
   /** Shown in the mobile bottom bar; the rest live under "その他". */
   primary: boolean;
   render: () => ReactNode;
@@ -38,56 +25,56 @@ const ROUTES: readonly Route[] = [
   {
     path: 'dashboard',
     label: 'ホーム',
-    icon: LayoutDashboard,
+    icon: 'space_dashboard',
     primary: true,
     render: () => <DashboardScreen />,
   },
   {
     path: 'payslips',
     label: '給与明細',
-    icon: FileText,
+    icon: 'receipt_long',
     primary: true,
     render: () => <PayslipsScreen />,
   },
   {
     path: 'furusato',
     label: 'ふるさと納税',
-    icon: Gift,
+    icon: 'redeem',
     primary: true,
     render: () => <FurusatoScreen />,
   },
   {
     path: 'result',
     label: '試算結果',
-    icon: Calculator,
+    icon: 'calculate',
     primary: true,
     render: () => <ResultScreen />,
   },
   {
     path: 'compare',
     label: '比較',
-    icon: BarChart3,
+    icon: 'bar_chart',
     primary: false,
     render: () => <CompareScreen />,
   },
   {
     path: 'deductions',
     label: '控除',
-    icon: Users,
+    icon: 'family_restroom',
     primary: false,
     render: () => <DeductionsScreen />,
   },
   {
     path: 'medical',
     label: '医療費',
-    icon: HeartPulse,
+    icon: 'ecg_heart',
     primary: false,
     render: () => <MedicalScreen />,
   },
   {
     path: 'settings',
     label: '設定',
-    icon: Settings,
+    icon: 'settings',
     primary: false,
     render: () => <SettingsScreen />,
   },
@@ -137,7 +124,7 @@ function Brand() {
   return (
     <a href="#/dashboard" className="flex items-center gap-2.5">
       <span className="grid size-8 place-items-center rounded-lg bg-accent text-white shadow-sm dark:text-paper">
-        <Calculator className="size-4" strokeWidth={2.2} aria-hidden />
+        <Icon name="calculate" filled className="size-[18px]" />
       </span>
       <span className="leading-tight">
         <span className="block text-sm font-semibold tracking-tight">還付金試算</span>
@@ -156,7 +143,6 @@ function NavLink({
   active: boolean;
   compact?: boolean;
 }) {
-  const Icon = route.icon;
   if (compact) {
     return (
       <a
@@ -166,7 +152,7 @@ function NavLink({
           active ? 'text-accent' : 'text-ink-soft'
         }`}
       >
-        <Icon className="size-5" strokeWidth={active ? 2.2 : 1.8} aria-hidden />
+        <Icon name={route.icon} filled={active} className="size-6" />
         {route.label}
       </a>
     );
@@ -181,7 +167,7 @@ function NavLink({
           : 'text-ink-soft hover:bg-paper-deep hover:text-ink'
       }`}
     >
-      <Icon className={`size-4 ${active ? 'text-accent' : ''}`} strokeWidth={2} aria-hidden />
+      <Icon name={route.icon} filled={active} className={`size-5 ${active ? 'text-accent' : ''}`} />
       {route.label}
     </a>
   );
@@ -210,12 +196,11 @@ function MoreSheet({ path, onClose }: { path: string; onClose: () => void }) {
             aria-label="閉じる"
             className="rounded-lg p-1.5 text-ink-soft hover:bg-paper-deep"
           >
-            <X className="size-4" aria-hidden />
+            <Icon name="close" />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {ROUTES.filter((r) => !r.primary).map((r) => {
-            const Icon = r.icon;
             return (
               <a
                 key={r.path}
@@ -225,7 +210,7 @@ function MoreSheet({ path, onClose }: { path: string; onClose: () => void }) {
                   r.path === path ? 'border-accent bg-accent-soft text-accent' : 'border-rule'
                 }`}
               >
-                <Icon className="size-5" aria-hidden />
+                <Icon name={r.icon} filled={r.path === path} />
                 {r.label}
               </a>
             );
@@ -239,7 +224,7 @@ function MoreSheet({ path, onClose }: { path: string; onClose: () => void }) {
 function PrivacyNote() {
   return (
     <p className="flex gap-2 text-[11px] leading-relaxed text-ink-faint">
-      <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+      <Icon name="verified_user" className="mt-px size-4" />
       データはこの端末のブラウザにのみ保存され、外部に送信されません。試算は目安です。
     </p>
   );
@@ -298,7 +283,7 @@ function Shell({ children, path }: { children: ReactNode; path: string }) {
           onClick={() => setMoreOpen(true)}
           className={`flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium ${moreActive ? 'text-accent' : 'text-ink-soft'}`}
         >
-          <MoreHorizontal className="size-5" aria-hidden />
+          <Icon name="more_horiz" className="size-6" />
           その他
         </button>
       </nav>
