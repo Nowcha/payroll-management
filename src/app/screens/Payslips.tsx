@@ -1,8 +1,8 @@
-import type { YearTotals } from '../../domain/forecast';
+import { slipComparison, type AnnualSummary } from '../../domain/annual';
 import type { WithholdingSlipRecord } from '../../domain/types';
 import { useAppData } from '../state';
 import { useAnnual } from '../useAnnual';
-import { EmptyState, Notice, Page, Panel, TableScroll, TD, TD_NUM, TH } from '../ui';
+import { EmptyState, Notice, Page, Panel, TableScroll, TD, TD_NUM, TH, yen } from '../ui';
 import { ImportPanel } from './payslips/ImportPanel';
 import { PayslipEditor } from './payslips/PayslipEditor';
 import { PayslipGrid } from './payslips/PayslipGrid';
@@ -10,43 +10,58 @@ import { SocialPlanPanel } from './payslips/SocialPlanPanel';
 
 function WithholdingComparison({
   slip,
-  totals,
-  annualTax,
+  summary,
 }: {
   slip: WithholdingSlipRecord;
-  totals: YearTotals;
-  annualTax: number;
+  summary: AnnualSummary;
 }) {
-  const rows: [string, number, number][] = [
-    ['支払金額', slip.paymentAmount, totals.taxablePay],
-    ['社会保険料等の金額', slip.socialInsurance, totals.socialInsurance],
-    ['源泉徴収税額', slip.withheldTax, annualTax],
-  ];
+  const rows = slipComparison(slip, summary);
+  const causes = rows.filter((r) => r.label !== '源泉徴収税額' && r.slip !== r.calc);
   return (
-    <TableScroll>
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className={TH}>項目</th>
-            <th className={`${TH} text-right`}>源泉徴収票（確定値）</th>
-            <th className={`${TH} text-right`}>明細の実績＋予測</th>
-            <th className={`${TH} text-right`}>差異</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(([label, fixed, calc]) => (
-            <tr key={label}>
-              <td className={TD}>{label}</td>
-              <td className={TD_NUM}>{fixed.toLocaleString()}</td>
-              <td className={TD_NUM}>{calc.toLocaleString()}</td>
-              <td className={`${TD_NUM} ${calc === fixed ? 'text-refund' : 'text-owed font-bold'}`}>
-                {(calc - fixed).toLocaleString()}
-              </td>
+    <>
+      <TableScroll>
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th className={TH}>項目</th>
+              <th className={`${TH} text-right`}>源泉徴収票（確定値）</th>
+              <th className={`${TH} text-right`}>試算</th>
+              <th className={`${TH} text-right`}>差異</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </TableScroll>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label}>
+                <td className={TD}>
+                  {r.slip !== r.calc ? (
+                    <a href={r.href} className="text-accent hover:underline">
+                      {r.label}
+                    </a>
+                  ) : (
+                    r.label
+                  )}
+                </td>
+                <td className={TD_NUM}>{yen(r.slip)}</td>
+                <td className={TD_NUM}>{yen(r.calc)}</td>
+                <td
+                  className={`${TD_NUM} ${r.calc === r.slip ? 'text-refund' : 'font-bold text-owed'}`}
+                >
+                  {yen(r.calc - r.slip)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableScroll>
+      {causes.some((c) => c.href === '#/deductions') && (
+        <div className="mt-3">
+          <Notice level="info">
+            控除額の差は、控除画面に保険契約・家族・住宅ローン控除が未登録のときに出ます。
+            源泉徴収票と同じ内容を登録すると年税額も一致します。
+          </Notice>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -66,11 +81,7 @@ export function PayslipsScreen() {
       <PayslipEditor />
       <Panel title="源泉徴収票との突合">
         {slip && summary ? (
-          <WithholdingComparison
-            slip={slip}
-            totals={summary.totals}
-            annualTax={summary.estimate.yearEnd.annualTax}
-          />
+          <WithholdingComparison slip={slip} summary={summary} />
         ) : (
           <EmptyState>{year}年分の源泉徴収票は未登録です（PDF取込から登録できます）</EmptyState>
         )}

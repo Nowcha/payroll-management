@@ -1,12 +1,13 @@
 // Synthetic data only.
 import { describe, expect, it } from 'vitest';
 import type { ParsedPayslip } from '../import/payslip';
-import { computeAnnual, EMPTY_RECORDS, furusatoWarnings } from './annual';
+import { computeAnnual, EMPTY_RECORDS, furusatoWarnings, slipDifferences } from './annual';
 import { compareCumulative, compareMonth } from './compare';
 import { buildYearTable, yearTotals } from './forecast';
 import { employeePremium, estimateRate, gradeOf, remunerationPlan } from './socialInsurance';
 import { getParams } from '../engine';
 import { planImport } from './importer';
+import { actualPayThrough } from './takeHome';
 import { seedItems } from './itemSeeds';
 import { buildLedger } from './ledger';
 import type { FurusatoDonation, ItemMaster } from './types';
@@ -213,6 +214,62 @@ describe('annual', () => {
   });
 });
 
+describe('take-home pay', () => {
+  // salary(): 支給 450,000 − 控除 107,700 = 差引 342,300.
+  it('mirrors 支給合計 − 控除合計 = 差引支給額 on actual slips', () => {
+    const { ledger } = ledgerOf([1, 2, 3].map((m) => salary(2026, m)));
+    expect(actualPayThrough(ledger, 2026, 2)).toEqual({
+      gross: 900_000,
+      deductions: 215_400,
+      net: 684_600,
+      otherDeductions: 0,
+    });
+  });
+  it('totals the year with forecasts and the December year-end refund', () => {
+    const { ledger } = ledgerOf([1, 2, 3].map((m) => salary(2026, m)));
+    const annual = computeAnnual(ledger, 2026, EMPTY_RECORDS);
+    const balance = annual.estimate.yearEndBalance;
+    expect(annual.takeHome.net).toBe(342_300 * 12 - balance);
+    expect(annual.takeHome.finalNet).toBe(annual.takeHome.net + annual.estimate.finalReturnRefund);
+  });
+  it('adds 支給合計・控除合計・手取り rows to comparisons', () => {
+    const { ledger } = ledgerOf([salary(2026, 2, 40_000), salary(2026, 3, 60_000)]);
+    const rows = compareMonth(ledger, 2026, { month: 3, kind: 'salary' }).vsPreviousMonth;
+    expect(rows.find((r) => r.key === 'total:net')).toMatchObject({
+      isTotal: true,
+      current: 352_300,
+      base: 332_300,
+      diff: 20_000,
+    });
+  });
+});
+
+describe('withholding slip reconciliation', () => {
+  it('names the unregistered deduction behind a tax mismatch', () => {
+    const { ledger } = ledgerOf(Array.from({ length: 12 }, (_, i) => salary(2025, i + 1)));
+    const s = computeAnnual(ledger, 2025, EMPTY_RECORDS);
+    const ye = s.estimate.yearEnd;
+    const diffs = slipDifferences(
+      {
+        year: 2025,
+        paymentAmount: s.totals.taxablePay,
+        employmentIncome: ye.income.employmentIncome,
+        totalDeductions: ye.deductions.total + 40_000,
+        withheldTax: ye.annualTax - 4_000,
+        socialInsurance: ye.deductions.socialInsurance,
+        lifeInsuranceDeduction: 40_000,
+        earthquakeInsuranceDeduction: 0,
+        housingLoanCredit: 0,
+      },
+      s,
+    );
+    expect(diffs.map((d) => [d.label, d.href])).toEqual([
+      ['生命保険料の控除額', '#/deductions'],
+      ['所得控除の額の合計額', '#/deductions'],
+    ]);
+  });
+});
+
 describe('annual without data', () => {
   it('does not count an empty year as containing forecasts', () => {
     const { ledger } = ledgerOf([]);
@@ -230,7 +287,7 @@ describe('compare', () => {
   ]);
   it('compares with the previous month and the same month last year', () => {
     const r = compareMonth(ledger, 2026, { month: 3, kind: 'salary' });
-    const ot = r.vsPreviousMonth.find((x) => x.item.name === '時間外勤務手当');
+    const ot = r.vsPreviousMonth.find((x) => x.label === '時間外勤務手当');
     expect(ot).toMatchObject({
       current: 60_000,
       base: 40_000,
@@ -238,7 +295,7 @@ describe('compare', () => {
       rate: 0.5,
       exceedsThreshold: true,
     });
-    expect(r.vsLastYear.find((x) => x.item.name === '時間外勤務手当')?.diff).toBe(10_000);
+    expect(r.vsLastYear.find((x) => x.label === '時間外勤務手当')?.diff).toBe(10_000);
   });
   it('flags the 2024 fixed tax reduction period', () => {
     const { ledger: l } = ledgerOf([salary(2024, 6), salary(2025, 6)]);
@@ -246,7 +303,7 @@ describe('compare', () => {
   });
   it('compares year-to-date totals', () => {
     const rows = compareCumulative(ledger, 2026, 3);
-    expect(rows.find((r) => r.item.name === '基本給')).toMatchObject({
+    expect(rows.find((r) => r.label === '基本給')).toMatchObject({
       current: 800_000,
       base: 400_000,
     });

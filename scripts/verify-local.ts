@@ -207,6 +207,13 @@ async function verifyPayslips(): Promise<boolean> {
         expected: yearEndActual,
         actual: annual.estimate.yearEndBalance,
       },
+      {
+        label: '差引支給額の年合計（手取り）',
+        expected: parsed
+          .filter((p) => p.slip.year === slip.year)
+          .reduce((a, p) => a + p.slip.totals.net, 0),
+        actual: annual.takeHome.net,
+      },
     ];
     const failed = checks.filter((c) => c.expected !== c.actual);
     allOk &&= failed.length === 0 && !annual.hasForecast;

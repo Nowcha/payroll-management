@@ -1,6 +1,6 @@
 import { Icon } from '../icon';
 import { useState } from 'react';
-import { furusatoWarnings, type AnnualSummary } from '../../domain/annual';
+import { furusatoWarnings, slipDifferences, type AnnualSummary } from '../../domain/annual';
 import { slotId } from '../../domain/ledger';
 import { useAppData } from '../state';
 import { useAnnual } from '../useAnnual';
@@ -120,19 +120,23 @@ export function DashboardScreen() {
       href: '#/settings',
     });
   }
-  if (slip && slip.paymentAmount !== totals.taxablePay) {
-    alerts.push({
-      level: 'warn',
-      text: `源泉徴収票の支払金額と明細の年間合計が ${yen(totals.taxablePay - slip.paymentAmount)}円 ずれています`,
-      href: '#/payslips',
-    });
-  }
-  if (slip && slip.withheldTax !== estimate.yearEnd.annualTax) {
-    alerts.push({
-      level: 'warn',
-      text: `源泉徴収票の源泉徴収税額と試算の年税額が一致しません`,
-      href: '#/result',
-    });
+  if (slip) {
+    const diffs = slipDifferences(slip, summary);
+    const taxMismatch = slip.withheldTax !== estimate.yearEnd.annualTax;
+    if (taxMismatch || diffs.length > 0) {
+      const head = taxMismatch
+        ? `源泉徴収票の年税額 ${yen(slip.withheldTax)}円 と試算 ${yen(estimate.yearEnd.annualTax)}円 がずれています。`
+        : '源泉徴収票と試算の内訳がずれています。';
+      const causes = diffs
+        .filter((d) => d.label !== '所得控除の額の合計額' || diffs.length === 1)
+        .map((d) => `${d.label}（票 ${yen(d.slip)} / 試算 ${yen(d.calc)}）`)
+        .join('、');
+      alerts.push({
+        level: 'warn',
+        text: causes ? `${head}差のある項目：${causes}` : head,
+        href: diffs[0]?.href ?? '#/result',
+      });
+    }
   }
   if (leaveMonths.includes(12)) {
     alerts.push({
@@ -214,7 +218,17 @@ export function DashboardScreen() {
               label="給与収入（課税支給）"
               value={<Money value={totals.taxablePay} />}
             />
-            <Stat size="sm" label="源泉徴収税額" value={<Money value={totals.incomeTax} />} />
+            <Stat
+              size="sm"
+              label="最終的な手取り"
+              tone="accent"
+              value={<Money value={summary.takeHome.finalNet} />}
+              note={
+                <a href="#/compare" className="hover:underline">
+                  手取り {yen(summary.takeHome.net)}円＋還付
+                </a>
+              }
+            />
           </dl>
         </div>
       </section>

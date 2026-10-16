@@ -1,9 +1,13 @@
 // 月次比較・累計比較（requirements F-06 / F-07）.
 import { actualAmounts, isSpecialPeriod, type Ledger, type SlotKey } from './ledger';
+import { payOf, type PayBreakdown } from './takeHome';
 import type { ItemMaster } from './types';
 
 export interface CompareRow {
-  item: ItemMaster;
+  key: string;
+  label: string;
+  /** 支給合計・控除合計・差引支給額（手取り）の集計行. */
+  isTotal: boolean;
   current: number;
   base: number;
   diff: number;
@@ -21,28 +25,62 @@ export interface MonthComparison {
 
 export const DEFAULT_THRESHOLD = 0.1;
 
+function row(
+  key: string,
+  label: string,
+  isTotal: boolean,
+  current: number,
+  base: number,
+  threshold: number,
+): CompareRow {
+  const diff = current - base;
+  const rate = base === 0 ? null : diff / Math.abs(base);
+  return {
+    key,
+    label,
+    isTotal,
+    current,
+    base,
+    diff,
+    rate,
+    exceedsThreshold: rate === null ? current !== 0 : Math.abs(rate) > threshold,
+  };
+}
+
+const TOTAL_ROWS: readonly [keyof PayBreakdown, string][] = [
+  ['gross', '支給合計'],
+  ['deductions', '控除合計'],
+  ['net', '差引支給額（手取り）'],
+];
+
 function rows(
+  ledger: Ledger,
   items: readonly ItemMaster[],
   current: Map<string, number> | undefined,
   base: Map<string, number> | undefined,
   threshold: number,
 ): CompareRow[] {
-  return items
-    .map((item) => {
-      const c = current?.get(item.id) ?? 0;
-      const b = base?.get(item.id) ?? 0;
-      const diff = c - b;
-      const rate = b === 0 ? null : diff / Math.abs(b);
-      return {
-        item,
-        current: c,
-        base: b,
-        diff,
-        rate,
-        exceedsThreshold: rate === null ? c !== 0 : Math.abs(rate) > threshold,
-      };
-    })
+  const itemRows = items
+    .map((item) =>
+      row(
+        item.id,
+        item.name,
+        false,
+        current?.get(item.id) ?? 0,
+        base?.get(item.id) ?? 0,
+        threshold,
+      ),
+    )
     .filter((r) => r.current !== 0 || r.base !== 0);
+  if (itemRows.length === 0) return [];
+  const c = payOf(ledger, current);
+  const b = payOf(ledger, base);
+  return [
+    ...itemRows,
+    ...TOTAL_ROWS.map(([key, label]) =>
+      row(`total:${key}`, label, true, c[key], b[key], threshold),
+    ),
+  ];
 }
 
 function previousSlot(year: number, slot: SlotKey): { year: number; slot: SlotKey } {
@@ -70,8 +108,14 @@ export function compareMonth(
     if (isSpecialPeriod(y, m)) notes.push(`${y}年${m}月は定額減税の特殊要因あり（所得税・住民税）`);
   }
   return {
-    vsPreviousMonth: rows(items, current, actualAmounts(ledger, prev.year, prev.slot), threshold),
-    vsLastYear: rows(items, current, actualAmounts(ledger, year - 1, slot), threshold),
+    vsPreviousMonth: rows(
+      ledger,
+      items,
+      current,
+      actualAmounts(ledger, prev.year, prev.slot),
+      threshold,
+    ),
+    vsLastYear: rows(ledger, items, current, actualAmounts(ledger, year - 1, slot), threshold),
     notes: [...new Set(notes)],
   };
 }
@@ -94,6 +138,7 @@ export function compareCumulative(
 ): CompareRow[] {
   const items = ledger.items.filter((i) => i.block !== 'attendance');
   return rows(
+    ledger,
     items,
     cumulative(ledger, year, throughMonth),
     cumulative(ledger, year - 1, throughMonth),
