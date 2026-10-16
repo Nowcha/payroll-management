@@ -41,10 +41,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon-180.png'],
       manifest: {
-        name: '還付金試算（給与明細ベース）',
-        short_name: '還付金試算',
+        name: 'Payroll Management',
+        short_name: 'Payroll',
         description:
-          '給与明細から年末調整・確定申告の還付とふるさと納税の上限を試算（データは端末内のみ）',
+          '給与明細・控除・ふるさと納税・医療費を年単位で管理し、年末調整と確定申告を見通す（データは端末内のみ）',
         lang: 'ja',
         display: 'standalone',
         background_color: '#f6f7fa',

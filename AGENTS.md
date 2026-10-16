@@ -1,7 +1,7 @@
-<!-- GENERATED from CLAUDE.md - do not edit directly. source-sha256: 39a275a86f1f51b1659c07bec549f9b01d787f0e31a9e916b360b2fbe40c9591 -->
-# 還付金試算ツール
+<!-- GENERATED from CLAUDE.md - do not edit directly. source-sha256: 2a6c0bf4e3d1f00dcd5dae420f37a79fc87fced66b29ede08ba43d0f2f39f95d -->
+# Payroll Management
 
-給与明細から確定申告の還付金を試算する個人用ツール。仕様は `docs/requirements.md`（要件定義書）が正。要件と矛盾する判断や、要件にない仕様を決める必要が出たら、実装前に確認すること。
+給与明細・各種控除・ふるさと納税・医療費を年単位で管理し、年末調整と確定申告（還付）を見通す個人用ツール。仕様は `docs/requirements.md`（要件定義書）が正。要件と矛盾する判断や、要件にない仕様を決める必要が出たら、実装前に確認すること。
 
 ## 技術スタック
 

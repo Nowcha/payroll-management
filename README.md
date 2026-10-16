@@ -1,6 +1,6 @@
-# 還付金試算ツール
+# Payroll Management
 
-給与明細から、年末調整の過不足・確定申告での還付・ふるさと納税の上限を年の途中から見通す個人用ツール。仕様は [docs/requirements.md](docs/requirements.md)。
+給与明細・各種控除・ふるさと納税・医療費を年単位でまとめて管理し、年末調整の過不足・確定申告での還付・ふるさと納税の上限を年の途中から見通す個人用ツール。仕様は [docs/requirements.md](docs/requirements.md)。
 
 - データはブラウザの IndexedDB にだけ保存し、外部に送信しない（本番ビルドは CSP で外部接続を禁止）
 - PDF はブラウザ内の pdf.js で読む。API キー不要
