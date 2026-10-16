@@ -97,7 +97,7 @@ export function PayslipGrid({ table }: { table: YearTable }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className={`${TH} sticky left-0 z-[1] bg-white`}>項目</th>
+              <th className={`${TH} sticky left-0 z-[1] bg-surface`}>項目</th>
               {table.slots.map((s) => (
                 <th key={slotId(s)} className={`${TH} text-right`}>
                   {slotLabel(s)}
@@ -114,7 +114,7 @@ export function PayslipGrid({ table }: { table: YearTable }) {
               <tr key={item.id}>
                 <th
                   scope="row"
-                  className="sticky left-0 z-[1] border-b border-rule bg-white px-2 py-1 text-left font-normal whitespace-nowrap"
+                  className="sticky left-0 z-[1] border-b border-rule/70 bg-surface px-2.5 py-1.5 text-left font-normal whitespace-nowrap"
                 >
                   {item.name}
                   <span className="ml-1 text-[10px] text-ink-soft">

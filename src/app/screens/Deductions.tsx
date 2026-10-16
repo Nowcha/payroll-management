@@ -53,7 +53,7 @@ function OtherDeductionsPanel() {
     >
       {error && <Notice level="error">{error}</Notice>}
       {draft && (
-        <div className="mb-4 grid gap-3 rounded-sm border border-ink/30 bg-paper p-3 sm:grid-cols-3">
+        <div className="mb-4 grid gap-3 rounded-xl border border-rule bg-paper p-4 sm:grid-cols-3">
           <Field label="種類">
             <Select
               value={draft.kind}

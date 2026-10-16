@@ -1,23 +1,63 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
 
-/* Ledger-paper direction: warm paper, ink text, semantic teal (refund) / vermilion (owed, alerts). */
+/*
+ * "Calm Statement" — neutral canvas, white surfaces, one accent (indigo) for interaction.
+ * Colour carries state only: refund (teal-green), owed (coral), forecast (hatched blue).
+ * Token names are kept from the first design so every screen picks up the new palette.
+ */
 @theme {
-  --color-paper: oklch(97.5% 0.012 85);
-  --color-paper-deep: oklch(94% 0.018 85);
-  --color-ink: oklch(24% 0.02 260);
-  --color-ink-soft: oklch(45% 0.02 260);
-  --color-rule: oklch(86% 0.02 85);
-  --color-refund: oklch(48% 0.09 175);
-  --color-refund-soft: oklch(93% 0.04 175);
-  --color-owed: oklch(55% 0.18 35);
-  --color-owed-soft: oklch(94% 0.04 35);
-  --color-forecast: oklch(90% 0.05 250);
-  --color-caution: oklch(70% 0.14 85);
+  --color-paper: oklch(97.6% 0.004 255);
+  --color-paper-deep: oklch(95.2% 0.006 255);
+  --color-surface: oklch(100% 0 0);
+  --color-ink: oklch(23% 0.018 265);
+  --color-ink-soft: oklch(52% 0.014 265);
+  --color-ink-faint: oklch(68% 0.01 265);
+  --color-rule: oklch(91.5% 0.006 265);
+  --color-accent: oklch(49% 0.16 268);
+  --color-accent-soft: oklch(95% 0.03 268);
+  --color-refund: oklch(52% 0.11 166);
+  --color-refund-soft: oklch(95.5% 0.035 166);
+  --color-owed: oklch(57% 0.16 32);
+  --color-owed-soft: oklch(95.5% 0.03 32);
+  --color-forecast: oklch(91% 0.04 255);
+  --color-caution: oklch(72% 0.14 78);
+  --color-caution-soft: oklch(96% 0.04 85);
+  --color-series-1: #00876f;
+  --color-series-2: #b8711f;
 
   --font-sans:
-    'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'Meiryo',
-    system-ui, sans-serif;
-  --font-figures: 'SF Mono', 'Cascadia Mono', 'Consolas', 'Menlo', ui-monospace, monospace;
+    'Inter Variable', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI',
+    'Meiryo', system-ui, sans-serif;
+  --font-figures: 'Inter Variable', 'Hiragino Sans', 'Yu Gothic UI', system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px oklch(23% 0.02 265 / 0.04), 0 4px 16px -8px oklch(23% 0.02 265 / 0.1);
+  --shadow-pop: 0 12px 32px -12px oklch(23% 0.02 265 / 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: oklch(16.5% 0.012 265);
+    --color-paper-deep: oklch(22% 0.014 265);
+    --color-surface: oklch(20% 0.013 265);
+    --color-ink: oklch(95% 0.005 265);
+    --color-ink-soft: oklch(72% 0.012 265);
+    --color-ink-faint: oklch(56% 0.012 265);
+    --color-rule: oklch(29% 0.014 265);
+    --color-accent: oklch(72% 0.13 268);
+    --color-accent-soft: oklch(28% 0.05 268);
+    --color-refund: oklch(76% 0.12 166);
+    --color-refund-soft: oklch(27% 0.04 166);
+    --color-owed: oklch(74% 0.13 32);
+    --color-owed-soft: oklch(28% 0.045 32);
+    --color-forecast: oklch(34% 0.05 255);
+    --color-caution: oklch(80% 0.13 80);
+    --color-caution-soft: oklch(29% 0.045 80);
+    --color-series-1: #2fa98a;
+    --color-series-2: #b57b36;
+    --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3);
+    --shadow-pop: 0 12px 32px -12px oklch(0% 0 0 / 0.6);
+  }
 }
 
 @layer base {
@@ -25,23 +65,21 @@
     background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
     -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    color-scheme: light dark;
   }
   body {
     min-height: 100dvh;
-    background-image: linear-gradient(var(--color-rule) 1px, transparent 1px);
-    background-size: 100% 2.25rem;
-    background-attachment: fixed;
-    background-color: var(--color-paper);
+    background: var(--color-paper);
   }
   :focus-visible {
-    outline: 2px solid var(--color-refund);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
-  input,
-  select,
-  textarea {
-    background: white;
+  ::selection {
+    background: var(--color-accent-soft);
   }
 }
 
@@ -49,13 +87,37 @@
   .figures {
     font-family: var(--font-figures);
     font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum', 'cv11';
     letter-spacing: -0.01em;
   }
   .forecast-cell {
     background-image: repeating-linear-gradient(
       135deg,
-      var(--color-forecast) 0 4px,
-      transparent 4px 8px
+      var(--color-forecast) 0 3px,
+      transparent 3px 7px
     );
+  }
+  .fade-in {
+    animation: fade-in 240ms ease-out both;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
+  * {
+    transition-duration: 0ms !important;
   }
 }

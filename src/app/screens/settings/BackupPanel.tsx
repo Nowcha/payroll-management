@@ -90,7 +90,7 @@ export function BackupPanel() {
         <Button variant="primary" disabled={busy} onClick={() => void onExport()}>
           エクスポート
         </Button>
-        <label className="inline-flex min-h-9 cursor-pointer items-center rounded-sm border border-ink bg-white px-3 text-sm font-semibold hover:bg-paper-deep">
+        <label className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-rule bg-surface px-3 text-sm font-medium shadow-sm hover:bg-paper-deep">
           <input
             type="file"
             accept="application/json,.json"

@@ -1,9 +1,82 @@
-import { furusatoWarnings } from '../../domain/annual';
+import { ArrowRight, CalendarClock, CircleCheck } from 'lucide-react';
+import { useState } from 'react';
+import { furusatoWarnings, type AnnualSummary } from '../../domain/annual';
+import { slotId } from '../../domain/ledger';
 import { useAppData } from '../state';
 import { useAnnual } from '../useAnnual';
-import { Badge, Money, Notice, Page, Panel, Stat } from '../ui';
+import { Badge, Meter, Money, Notice, Page, Panel, Stat, yen } from '../ui';
 
 const today = (): string => new Date().toISOString().slice(0, 10);
+
+interface Alert {
+  level: 'error' | 'warn' | 'info';
+  text: string;
+  href: string;
+}
+
+/** Monthly taxable pay: actual (solid), forecast (hatched), leave (empty). One series, so no legend box. */
+function MonthlyIncome({ summary }: { summary: AnnualSummary }) {
+  const { ledger } = useAppData();
+  const [hover, setHover] = useState<number | null>(null);
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const id = slotId({ month: i + 1, kind: 'salary' });
+    let pay = 0;
+    for (const [itemId, cell] of summary.table.cells.get(id) ?? []) {
+      if (ledger.itemById.get(itemId)?.category === 'taxablePay') pay += cell.amount;
+    }
+    const state = summary.table.actualSlotIds.has(id)
+      ? 'actual'
+      : summary.table.leaveSlotIds.has(id)
+        ? 'leave'
+        : 'forecast';
+    return { month: i + 1, pay, state };
+  });
+  const max = Math.max(1, ...months.map((m) => m.pay));
+  const shown = hover === null ? null : months[hover - 1];
+  return (
+    <Panel
+      title="月ごとの課税支給"
+      description="実績は塗り、予測は斜線、休業月は空欄"
+      aside={
+        <span className="figures text-xs text-ink-soft">
+          {shown
+            ? `${shown.month}月 ${yen(shown.pay)}円${shown.state === 'forecast' ? '（予測）' : shown.state === 'leave' ? '（休業）' : ''}`
+            : ''}
+        </span>
+      }
+    >
+      <div className="flex h-36 items-end gap-1.5" onMouseLeave={() => setHover(null)}>
+        {months.map((m) => (
+          <button
+            key={m.month}
+            type="button"
+            aria-label={`${m.month}月 ${yen(m.pay)}円 ${m.state === 'actual' ? '実績' : m.state === 'leave' ? '休業' : '予測'}`}
+            onMouseEnter={() => setHover(m.month)}
+            onFocus={() => setHover(m.month)}
+            onClick={() => setHover(m.month)}
+            className="group flex h-full flex-1 flex-col items-stretch justify-end gap-1.5"
+          >
+            <span
+              className={`block rounded-t-[4px] transition-opacity duration-200 ${
+                m.state === 'actual'
+                  ? 'bg-accent'
+                  : m.state === 'forecast'
+                    ? 'forecast-cell border border-b-0 border-accent/40'
+                    : ''
+              } ${hover !== null && hover !== m.month ? 'opacity-50' : ''}`}
+              style={{ height: `${Math.max(m.pay > 0 ? 4 : 0, (m.pay / max) * 100)}%` }}
+            />
+            <span
+              className={`figures text-center text-[10px] ${m.state === 'leave' ? 'text-owed' : 'text-ink-faint'}`}
+            >
+              {m.state === 'leave' ? '休' : m.month}
+            </span>
+          </button>
+        ))}
+      </div>
+    </Panel>
+  );
+}
 
 export function DashboardScreen() {
   const { year, items, records, withholding, payslips } = useAppData();
@@ -15,13 +88,15 @@ export function DashboardScreen() {
   const limit = filing ? estimate.furusato.withMedical : estimate.furusato.withoutMedical;
   const balance = estimate.yearEndBalance;
   const slip = withholding.find((w) => w.year === year);
+  const leaveMonths = records.yearSettings.find((s) => s.year === year)?.leaveMonths ?? [];
+  const hasData = payslips.some((p) => p.year === year);
 
-  const alerts: { level: 'error' | 'warn' | 'info'; text: string; href: string }[] = [];
+  const alerts: Alert[] = [];
   const pending = items.filter((i) => i.category === 'pending');
   if (pending.length > 0) {
     alerts.push({
       level: 'warn',
-      text: `分類待ちの項目が${pending.length}件あります（${pending.map((p) => p.name).join('、')}）。税計算に反映されません`,
+      text: `分類待ちの項目が${pending.length}件（${pending.map((p) => p.name).join('、')}）。税計算に反映されません`,
       href: '#/settings',
     });
   }
@@ -31,7 +106,7 @@ export function DashboardScreen() {
   if (missingCert.length > 0) {
     alerts.push({
       level: 'info',
-      text: `控除証明書が未受領の保険契約が${missingCert.length}件あります`,
+      text: `控除証明書が未受領の保険契約が${missingCert.length}件`,
       href: '#/deductions',
     });
   }
@@ -41,35 +116,32 @@ export function DashboardScreen() {
   for (const p of estimate.unconfirmed) {
     alerts.push({
       level: 'warn',
-      text: `税制パラメータ「${p.name}」が要確認のまま計算に使われています`,
+      text: `税制パラメータ「${p.name}」が要確認のまま使われています`,
       href: '#/settings',
     });
   }
-  if (slip) {
-    if (slip.paymentAmount !== totals.taxablePay) {
-      alerts.push({
-        level: 'warn',
-        text: `源泉徴収票の支払金額と明細の年間合計が ${(totals.taxablePay - slip.paymentAmount).toLocaleString()}円 ずれています`,
-        href: '#/payslips',
-      });
-    }
-    if (slip.withheldTax !== estimate.yearEnd.annualTax) {
-      alerts.push({
-        level: 'warn',
-        text: `源泉徴収票の源泉徴収税額（${slip.withheldTax.toLocaleString()}円）と試算の年税額が一致しません`,
-        href: '#/result',
-      });
-    }
-  }
-  const leaveMonths = records.yearSettings.find((s) => s.year === year)?.leaveMonths ?? [];
-  if (leaveMonths.includes(12)) {
+  if (slip && slip.paymentAmount !== totals.taxablePay) {
     alerts.push({
-      level: 'info',
-      text: '12月が休業のため、年末調整の精算時期は会社の扱いによります（12月中の振込・翌年の給与・確定申告のいずれか）',
+      level: 'warn',
+      text: `源泉徴収票の支払金額と明細の年間合計が ${yen(totals.taxablePay - slip.paymentAmount)}円 ずれています`,
       href: '#/payslips',
     });
   }
-  if (payslips.filter((p) => p.year === year).length === 0) {
+  if (slip && slip.withheldTax !== estimate.yearEnd.annualTax) {
+    alerts.push({
+      level: 'warn',
+      text: `源泉徴収票の源泉徴収税額と試算の年税額が一致しません`,
+      href: '#/result',
+    });
+  }
+  if (leaveMonths.includes(12)) {
+    alerts.push({
+      level: 'info',
+      text: '12月が休業のため、年末調整の精算時期は会社の扱いによります（12月中の振込・翌年の給与・確定申告）',
+      href: '#/payslips',
+    });
+  }
+  if (!hasData) {
     alerts.push({
       level: 'info',
       text: `${year}年の明細が未登録です。給与明細画面からPDFを取り込んでください`,
@@ -77,82 +149,136 @@ export function DashboardScreen() {
     });
   }
 
+  const refund = balance <= 0;
+  const forecastNote = [
+    totals.forecastSalaryMonths > 0 ? `給与${totals.forecastSalaryMonths}か月` : '',
+    totals.forecastBonusCount > 0 ? `賞与${totals.forecastBonusCount}回` : '',
+  ]
+    .filter(Boolean)
+    .join('・');
+  const verdict = refund
+    ? `年末調整で${yen(Math.abs(balance))}円が戻る見込みです。`
+    : `年末調整で${yen(balance)}円の追加徴収が見込まれます。`;
+  const basis = summary.hasForecast
+    ? [
+        forecastNote ? `${forecastNote}の予測を含みます。` : '',
+        leaveMonths.length > 0 ? `休業（${leaveMonths.join('・')}月）を反映済みです。` : '',
+      ].join('')
+    : '全月が実績です。';
+  const sentence = hasData
+    ? verdict + basis
+    : '明細を取り込むと、年末調整と確定申告の見込みがここに表示されます。';
+  const remainingRatio = limit.limit > 0 ? summary.donationsTotal / limit.limit : 0;
+
   return (
-    <Page
-      title={`${year}年分の見通し`}
-      lead={
-        summary.hasForecast
-          ? `予測を含む：給与${totals.forecastSalaryMonths}か月・賞与${totals.forecastBonusCount}回` +
-            (leaveMonths.length > 0 ? `／休業 ${leaveMonths.map((m) => `${m}月`).join('・')}` : '')
-          : '全月が実績です'
-      }
-    >
-      <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
-        <Panel className="md:row-span-2">
-          <div className="space-y-5">
+    <Page title={`${year}年分の見通し`} eyebrow={summary.hasForecast ? '予測を含む' : '実績で確定'}>
+      <section className="relative overflow-hidden rounded-3xl border border-rule bg-surface p-5 shadow-[var(--shadow-card)] sm:p-8">
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute -top-24 -right-24 size-72 rounded-full blur-3xl ${refund ? 'bg-refund-soft' : 'bg-owed-soft'}`}
+        />
+        <div className="relative grid gap-8 xl:grid-cols-[1.2fr_1fr] xl:items-end">
+          <div>
+            <Badge tone={refund ? 'refund' : 'owed'}>
+              {refund ? (
+                <CircleCheck className="size-3" aria-hidden />
+              ) : (
+                <CalendarClock className="size-3" aria-hidden />
+              )}
+              {refund ? '年末調整で還付' : '年末調整で追加徴収'}
+            </Badge>
+            <div className="mt-3">
+              <Stat
+                size="lg"
+                label=""
+                tone={refund ? 'refund' : 'owed'}
+                value={<Money value={Math.abs(balance)} />}
+              />
+            </div>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">{sentence}</p>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-rule pt-5 sm:grid-cols-4 xl:grid-cols-2 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-8">
             <Stat
-              size="lg"
-              label="年末調整の過不足見込み"
-              tone={balance <= 0 ? 'refund' : 'owed'}
-              value={<Money value={Math.abs(balance)} />}
-              note={balance <= 0 ? '12月の給与で戻る見込み' : '12月の給与で追加徴収の見込み'}
-            />
-            <Stat
-              label="確定申告で追加で戻る見込み"
+              size="sm"
+              label="確定申告での追加還付"
               tone={estimate.finalReturnRefund > 0 ? 'refund' : 'neutral'}
               value={<Money value={estimate.finalReturnRefund} />}
-              note={
-                estimate.finalReturnRefund > 0
-                  ? '医療費控除・寄附金控除による還付'
-                  : '医療費控除の足切りを超えていません'
-              }
             />
-            <div className="grid grid-cols-2 gap-4 border-t border-rule pt-4">
-              <Stat
-                label="年税額（年調ベース）"
-                value={<Money value={estimate.yearEnd.annualTax} />}
-              />
-              <Stat label="源泉徴収税額（1〜12月）" value={<Money value={totals.incomeTax} />} />
-              <Stat label="給与収入（課税支給）" value={<Money value={totals.taxablePay} />} />
-              <Stat label="社会保険料" value={<Money value={totals.socialInsurance} />} />
-            </div>
-          </div>
-        </Panel>
+            <Stat
+              size="sm"
+              label="年税額（年調ベース）"
+              value={<Money value={estimate.yearEnd.annualTax} />}
+            />
+            <Stat
+              size="sm"
+              label="給与収入（課税支給）"
+              value={<Money value={totals.taxablePay} />}
+            />
+            <Stat size="sm" label="源泉徴収税額" value={<Money value={totals.incomeTax} />} />
+          </dl>
+        </div>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-3">
         <Panel
           title="ふるさと納税"
-          aside={filing ? <Badge tone="caution">医療費控除あり</Badge> : undefined}
+          description={filing ? '医療費控除で確定申告する前提の上限' : '年末調整のみの前提の上限'}
+          aside={
+            <a
+              href="#/furusato"
+              className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+            >
+              寄付を管理 <ArrowRight className="size-3" aria-hidden />
+            </a>
+          }
         >
-          <div className="grid grid-cols-2 gap-4">
-            <Stat label="上限額" value={<Money value={limit.limit} />} />
-            <Stat label="寄付済み" value={<Money value={summary.donationsTotal} />} />
-            <Stat
-              label="残枠"
-              tone={summary.furusatoRemaining >= 0 ? 'refund' : 'owed'}
-              value={<Money value={summary.furusatoRemaining} />}
+          <Stat
+            label="残枠"
+            tone={summary.furusatoRemaining >= 0 ? 'accent' : 'owed'}
+            value={<Money value={summary.furusatoRemaining} />}
+          />
+          <div className="mt-4">
+            <Meter
+              value={summary.donationsTotal}
+              max={limit.limit}
+              tone={remainingRatio > 1 ? 'owed' : 'accent'}
             />
-            <Stat
-              label="推奨寄付額"
-              value={<Money value={summary.hasForecast ? limit.recommended : limit.limit} />}
-              note={summary.hasForecast ? '予測を含むため上限の90%' : '全月実績のため上限どおり'}
-            />
+            <div className="figures mt-2 flex justify-between text-xs text-ink-soft">
+              <span>寄付済み {yen(summary.donationsTotal)}円</span>
+              <span>上限 {yen(limit.limit)}円</span>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl bg-paper-deep px-3 py-2.5 text-xs text-ink-soft">
+            推奨寄付額{' '}
+            <span className="figures font-semibold text-ink">
+              {yen(summary.hasForecast ? limit.recommended : limit.limit)}円
+            </span>
+            {summary.hasForecast ? '（予測を含むため上限の90%）' : ''}
           </div>
         </Panel>
-        <Panel title="未処理アラート">
-          {alerts.length === 0 ? (
-            <p className="text-sm text-ink-soft">対応が必要な項目はありません。</p>
-          ) : (
-            <ul className="space-y-2">
-              {alerts.map((a) => (
-                <li key={a.text}>
-                  <a href={a.href} className="block hover:opacity-80">
-                    <Notice level={a.level}>{a.text}</Notice>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
+
+        <div className="lg:col-span-2">
+          <MonthlyIncome summary={summary} />
+        </div>
       </div>
+
+      <Panel title="要対応" description={alerts.length === 0 ? undefined : `${alerts.length}件`}>
+        {alerts.length === 0 ? (
+          <p className="flex items-center gap-2 text-sm text-ink-soft">
+            <CircleCheck className="size-4 text-refund" aria-hidden /> 対応が必要な項目はありません
+          </p>
+        ) : (
+          <ul className="grid gap-2 md:grid-cols-2">
+            {alerts.map((a) => (
+              <li key={a.text}>
+                <a href={a.href} className="block transition-opacity hover:opacity-80">
+                  <Notice level={a.level}>{a.text}</Notice>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
     </Page>
   );
 }

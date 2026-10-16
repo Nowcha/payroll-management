@@ -155,7 +155,7 @@ export function PayslipEditor() {
         </div>
       )}
       {draft && (
-        <div className="mb-4 space-y-3 rounded-sm border border-ink/30 bg-paper p-3">
+        <div className="mb-4 space-y-3 rounded-xl border border-rule bg-paper p-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Field label="月">
               <Select

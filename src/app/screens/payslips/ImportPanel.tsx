@@ -1,4 +1,5 @@
-import { useState, type ChangeEvent } from 'react';
+import { FileUp, LoaderCircle } from 'lucide-react';
+import { useState, type DragEvent } from 'react';
 import { planImport, type ImportPlan } from '../../../domain/importer';
 import { newId, saveImportPlan, saveWithholdingSlip } from '../../../domain/repo';
 import type { WithholdingSlipData } from '../../../import/withholding';
@@ -19,9 +20,12 @@ export function ImportPanel() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const onFiles = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const files = [...(e.target.files ?? [])];
-    e.target.value = '';
+  const [dragging, setDragging] = useState(false);
+
+  const onFiles = async (list: FileList | null): Promise<void> => {
+    const files = [...(list ?? [])].filter(
+      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
+    );
     if (files.length === 0) return;
     setBusy(true);
     setResult(null);
@@ -69,24 +73,46 @@ export function ImportPanel() {
   const accepted = pending?.plan.slips.filter((s) => s.ok) ?? [];
 
   return (
-    <Panel
-      title="PDF取込"
-      aside={
-        <span className="text-xs text-ink-soft">
-          給与・賞与明細と源泉徴収票をまとめて選択できます
-        </span>
-      }
-    >
-      <label className="inline-flex cursor-pointer items-center gap-2 rounded-sm border-2 border-dashed border-ink/40 px-4 py-3 text-sm font-semibold hover:border-ink">
+    <Panel title="PDF取込">
+      <label
+        onDragOver={(e: DragEvent) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e: DragEvent) => {
+          e.preventDefault();
+          setDragging(false);
+          if (!busy) void onFiles(e.dataTransfer.files);
+        }}
+        className={`flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 text-sm transition-colors duration-200 ${
+          dragging
+            ? 'border-accent bg-accent-soft text-accent'
+            : 'border-rule bg-paper text-ink-soft hover:border-accent hover:bg-accent-soft hover:text-accent'
+        }`}
+      >
         <input
           type="file"
           accept="application/pdf,.pdf"
           multiple
           className="sr-only"
-          onChange={(e) => void onFiles(e)}
+          onChange={(e) => {
+            void onFiles(e.target.files);
+            e.target.value = '';
+          }}
           disabled={busy}
         />
-        {busy ? '読み取り中…' : 'PDFを選択'}
+        {busy ? (
+          <LoaderCircle className="size-6 animate-spin" aria-hidden />
+        ) : (
+          <FileUp className="size-6" aria-hidden />
+        )}
+        <span className="font-medium">
+          {busy ? '読み取り中…' : 'PDFをドロップ、またはクリックして選択'}
+        </span>
+        <span className="text-xs text-ink-faint">
+          給与・賞与明細と源泉徴収票をまとめて取り込めます
+        </span>
       </label>
       <p className="mt-2 text-xs text-ink-soft">
         PDFはブラウザ内で読み取ります（外部に送信しません）。検算5本と累計照合を通らない明細は登録しません。
