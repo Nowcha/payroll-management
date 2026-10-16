@@ -1,5 +1,7 @@
 // F-12: insurance contracts, yearly premiums and certificate status.
 import { useState } from 'react';
+import { SUPPORTED_YEARS } from '../../../engine';
+import { contractsFromSlips } from '../../../domain/insuranceFromSlip';
 import { newId } from '../../../domain/repo';
 import {
   INSURANCE_KIND_LABEL,
@@ -49,10 +51,40 @@ export function InsurancePanel({
   residentLife: number;
   residentEarthquake: number;
 }) {
-  const { db, year, records } = useAppData();
+  const { db, year, records, withholding } = useAppData();
   const [draft, setDraft] = useState<InsuranceContract | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const key = String(year);
+  const slipYears = withholding
+    .filter((w) => w.lifeInsurancePremiums)
+    .map((w) => w.year)
+    .sort();
+  const nextYear = slipYears.length > 0 ? Math.max(...slipYears) + 1 : undefined;
+  const extendTo =
+    nextYear !== undefined && SUPPORTED_YEARS.includes(nextYear) ? nextYear : undefined;
+
+  const importFromSlips = async (): Promise<void> => {
+    const contracts = contractsFromSlips(withholding, records.insurance, extendTo);
+    if (contracts.length === 0) {
+      setInfo('源泉徴収票に生命保険料の内訳がありません');
+      return;
+    }
+    const message =
+      `源泉徴収票（${slipYears.join('・')}年分）の生命保険料の内訳から${contracts.length}件の契約を登録します。` +
+      (extendTo
+        ? `
+${extendTo}年分は${extendTo - 1}年と同額を見込みとして入れます（後から編集できます）。`
+        : '');
+    if (!window.confirm(message)) return;
+    try {
+      await db.insurance.bulkPut(contracts);
+      setError(null);
+      setInfo(`${contracts.length}件の契約を源泉徴収票の内訳で登録しました`);
+    } catch (e: unknown) {
+      setError(errorText(e));
+    }
+  };
 
   const save = async (c: InsuranceContract): Promise<void> => {
     try {
@@ -67,9 +99,16 @@ export function InsurancePanel({
     <Panel
       title="保険契約"
       aside={
-        <Button variant="primary" onClick={() => setDraft(blank())}>
-          追加
-        </Button>
+        <span className="flex gap-2">
+          {slipYears.length > 0 && (
+            <Button variant="secondary" onClick={() => void importFromSlips()}>
+              源泉徴収票から登録
+            </Button>
+          )}
+          <Button variant="primary" onClick={() => setDraft(blank())}>
+            追加
+          </Button>
+        </span>
       }
     >
       <div className="mb-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -99,6 +138,7 @@ export function InsurancePanel({
         </div>
       </div>
       {error && <Notice level="error">{error}</Notice>}
+      {info && <Notice level="info">{info}</Notice>}
       {draft && (
         <div className="mb-4 grid gap-3 rounded-xl border border-rule bg-paper p-4 sm:grid-cols-3">
           <Field label="種類">

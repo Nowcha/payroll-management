@@ -100,6 +100,14 @@ export interface WithholdingSlipRecord {
   lifeInsuranceDeduction: number;
   earthquakeInsuranceDeduction: number;
   housingLoanCredit: number;
+  /** 生命保険料の金額の内訳（記載がある様式のみ。取込時に保存）. */
+  lifeInsurancePremiums?: {
+    generalNew: number;
+    generalOld: number;
+    careMedical: number;
+    pensionNew: number;
+    pensionOld: number;
+  } | null;
   sourceFile?: string;
 }
 

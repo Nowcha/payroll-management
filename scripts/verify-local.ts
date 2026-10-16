@@ -18,7 +18,7 @@ import { seedItems } from '../src/domain/itemSeeds';
 import { actualAmounts, buildLedger } from '../src/domain/ledger';
 import { premiumsAt, remunerationPlan, REVISION_LABEL } from '../src/domain/socialInsurance';
 import { computeAnnual, EMPTY_RECORDS } from '../src/domain/annual';
-import type { InsuranceContract } from '../src/domain/types';
+import { contractsFromSlips } from '../src/domain/insuranceFromSlip';
 import { readPdfText } from './lib/node-pdf';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -120,27 +120,6 @@ async function readSlips(): Promise<WithholdingSlipData[]> {
   return slips.filter((s) => SUPPORTED_YEARS.includes(s.year));
 }
 
-function contractsFrom(slips: readonly WithholdingSlipData[]): InsuranceContract[] {
-  const kinds = [
-    ['generalNew', 'generalLife', false],
-    ['generalOld', 'generalLife', true],
-    ['careMedical', 'careMedical', false],
-    ['pensionNew', 'pension', false],
-    ['pensionOld', 'pension', true],
-  ] as const;
-  return kinds.map(([field, kind, isOld]) => ({
-    id: field,
-    kind,
-    isOld,
-    company: '源泉徴収票の内訳',
-    premiumByYear: Object.fromEntries(
-      slips.map((s) => [String(s.year), s.lifeInsurancePremiums?.[field] ?? 0]),
-    ),
-    certificateReceivedOn: {},
-    submittedForYearEnd: {},
-  }));
-}
-
 /** Bulk-imports every payslip and checks the annual pipeline against the withholding slips. */
 async function verifyPayslips(): Promise<boolean> {
   const parsed = [];
@@ -180,7 +159,7 @@ async function verifyPayslips(): Promise<boolean> {
     ok.flatMap((s) => s.lines),
   );
   const slips = await readSlips();
-  const records = { ...EMPTY_RECORDS, insurance: contractsFrom(slips) };
+  const records = { ...EMPTY_RECORDS, insurance: contractsFromSlips(slips, []) };
   let allOk = rejected.length === 0;
   console.log('== 明細の年間集計 × 源泉徴収票 ==');
   for (const slip of slips) {

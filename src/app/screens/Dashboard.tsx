@@ -101,7 +101,10 @@ export function DashboardScreen() {
     });
   }
   const missingCert = records.insurance.filter(
-    (c) => (c.premiumByYear[String(year)] ?? 0) > 0 && !c.certificateReceivedOn[String(year)],
+    (c) =>
+      (c.premiumByYear[String(year)] ?? 0) > 0 &&
+      !c.certificateReceivedOn[String(year)] &&
+      !c.submittedForYearEnd[String(year)],
   );
   if (missingCert.length > 0) {
     alerts.push({
