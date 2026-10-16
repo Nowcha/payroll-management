@@ -127,8 +127,8 @@ function Brand() {
         <Icon name="calculate" filled className="size-[18px]" />
       </span>
       <span className="leading-tight">
-        <span className="block text-sm font-semibold tracking-tight">還付金試算</span>
-        <span className="block text-[10px] text-ink-soft">給与明細ベース</span>
+        <span className="block text-sm font-semibold tracking-tight">Payroll Management</span>
+        <span className="block text-[10px] text-ink-soft">給与・控除・ふるさと納税</span>
       </span>
     </a>
   );
