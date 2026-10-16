@@ -1,11 +1,11 @@
 // Shared UI kit — "Calm Statement": neutral surfaces, one accent, colour only for state.
-import { AlertTriangle, CircleAlert, Info, type LucideIcon } from 'lucide-react';
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
 } from 'react';
+import { Icon, type IconName } from './icon';
 
 export function yen(value: number): string {
   return value.toLocaleString('ja-JP');
@@ -150,11 +150,11 @@ export function Badge({ tone = 'neutral', children }: { tone?: Tone; children: R
 
 const NOTICE: Record<
   'error' | 'warn' | 'info',
-  { icon: LucideIcon; box: string; iconColor: string }
+  { icon: IconName; box: string; iconColor: string }
 > = {
-  error: { icon: CircleAlert, box: 'bg-owed-soft', iconColor: 'text-owed' },
-  warn: { icon: AlertTriangle, box: 'bg-caution-soft', iconColor: 'text-caution' },
-  info: { icon: Info, box: 'bg-paper-deep', iconColor: 'text-ink-soft' },
+  error: { icon: 'error', box: 'bg-owed-soft', iconColor: 'text-owed' },
+  warn: { icon: 'warning', box: 'bg-caution-soft', iconColor: 'text-caution' },
+  info: { icon: 'info', box: 'bg-paper-deep', iconColor: 'text-ink-soft' },
 };
 
 export function Notice({
@@ -164,13 +164,13 @@ export function Notice({
   level: 'error' | 'warn' | 'info';
   children: ReactNode;
 }) {
-  const { icon: Icon, box, iconColor } = NOTICE[level];
+  const { icon, box, iconColor } = NOTICE[level];
   return (
     <div
       role={level === 'error' ? 'alert' : 'status'}
       className={`flex gap-2.5 rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${box}`}
     >
-      <Icon aria-hidden className={`mt-0.5 size-4 shrink-0 ${iconColor}`} strokeWidth={2} />
+      <Icon name={icon} filled className={`mt-px size-[18px] ${iconColor}`} />
       <div className="min-w-0">{children}</div>
     </div>
   );
