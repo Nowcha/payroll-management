@@ -78,7 +78,10 @@ export interface IncomeTaxResult {
   marginalRate: number;
   calculatedTax: number;
   housingLoanCredit: number;
+  /** 定額減税のうち控除できた額（控除済額）. */
   fixedTaxReduction: number;
+  /** 定額減税額（本人＋扶養親族 × 1人あたりの額）. 控除外額＝これ − 控除済額. */
+  fixedTaxReductionTotal: number;
   /** 基準所得税額（税額控除・定額減税の後）. */
   baseTax: number;
   reconstructionTax: number;
@@ -238,6 +241,7 @@ export function calcIncomeTax(
       calculatedTax,
       housingLoanCredit: Math.min(input.housingLoanCredit, calculatedTax),
       fixedTaxReduction: Math.min(reduction, afterCredit),
+      fixedTaxReductionTotal: reduction,
       baseTax,
       reconstructionTax,
       annualTax,

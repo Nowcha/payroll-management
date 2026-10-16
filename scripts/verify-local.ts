@@ -19,6 +19,7 @@ import { actualAmounts, buildLedger } from '../src/domain/ledger';
 import { premiumsAt, remunerationPlan, REVISION_LABEL } from '../src/domain/socialInsurance';
 import { computeAnnual, EMPTY_RECORDS } from '../src/domain/annual';
 import { contractsFromSlips } from '../src/domain/insuranceFromSlip';
+import { buildSlipDraft, draftChecks } from '../src/domain/slipDraft';
 import { readPdfText } from './lib/node-pdf';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -194,6 +195,12 @@ async function verifyPayslips(): Promise<boolean> {
         actual: annual.takeHome.net,
       },
     ];
+    const draftNg = draftChecks(buildSlipDraft(annual), slip).filter((c) => c.draft !== c.slip);
+    checks.push({
+      label: `源泉徴収票ドラフトの不一致欄（${draftNg.map((c) => c.label).join('、') || 'なし'}）`,
+      expected: 0,
+      actual: draftNg.length,
+    });
     const failed = checks.filter((c) => c.expected !== c.actual);
     allOk &&= failed.length === 0 && !annual.hasForecast;
     console.log(

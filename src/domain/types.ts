@@ -108,6 +108,10 @@ export interface WithholdingSlipRecord {
     pensionNew: number;
     pensionOld: number;
   } | null;
+  /** 基礎控除の額・所得金額調整控除額・定額減税の控除済額（記載がある様式のみ）. */
+  basicDeduction?: number | null;
+  incomeAdjustment?: number | null;
+  fixedTaxReductionApplied?: number | null;
   sourceFile?: string;
 }
 
