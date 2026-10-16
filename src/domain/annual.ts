@@ -20,6 +20,7 @@ import {
 } from './forecast';
 import type { Ledger } from './ledger';
 import { remunerationPlan, type RemunerationPlan } from './socialInsurance';
+import { tablePay, takeHome, type TakeHome } from './takeHome';
 import type {
   FamilyMember,
   ForecastOverride,
@@ -28,6 +29,7 @@ import type {
   MedicalExpense,
   OtherDeduction,
   Reimbursement,
+  WithholdingSlipRecord,
   YearSetting,
 } from './types';
 
@@ -72,6 +74,8 @@ export interface AnnualSummary {
   hasForecast: boolean;
   /** F-11 plan (null until April–June salary is recorded). */
   plan: RemunerationPlan | null;
+  /** 手取り（差引支給額の年合計、予測・年調見込みを含む）と確定申告後の最終手取り. */
+  takeHome: TakeHome;
 }
 
 const inYear = (date: string, year: number): boolean => date.startsWith(`${year}-`);
@@ -205,7 +209,83 @@ export function computeAnnual(
       totals.forecastBonusCount > 0 ||
       totals.leaveSalaryMonths > 0,
     plan,
+    takeHome: takeHome(tablePay(ledger, table), estimate.finalReturnRefund),
   };
+}
+
+export interface SlipDifference {
+  label: string;
+  slip: number;
+  calc: number;
+  /** Screen where the input behind this figure is registered. */
+  href: string;
+}
+
+/**
+ * Lines up the figures printed on the 源泉徴収票 with the year-end estimate, so a mismatch in
+ * 源泉徴収税額 can be traced to its cause (給与所得・社会保険料・各控除・住宅ローン控除).
+ */
+export function slipComparison(
+  slip: WithholdingSlipRecord,
+  summary: AnnualSummary,
+): SlipDifference[] {
+  const ye = summary.estimate.yearEnd;
+  const rows: SlipDifference[] = [
+    {
+      label: '支払金額',
+      slip: slip.paymentAmount,
+      calc: summary.totals.taxablePay,
+      href: '#/payslips',
+    },
+    {
+      label: '給与所得控除後の金額',
+      slip: slip.employmentIncome,
+      calc: ye.income.employmentIncome,
+      href: '#/payslips',
+    },
+    {
+      label: '社会保険料等の金額',
+      slip: slip.socialInsurance,
+      calc: ye.deductions.socialInsurance + ye.deductions.smallBusinessMutualAid,
+      href: '#/payslips',
+    },
+    {
+      label: '生命保険料の控除額',
+      slip: slip.lifeInsuranceDeduction,
+      calc: ye.deductions.lifeInsurance,
+      href: '#/deductions',
+    },
+    {
+      label: '地震保険料の控除額',
+      slip: slip.earthquakeInsuranceDeduction,
+      calc: ye.deductions.earthquakeInsurance,
+      href: '#/deductions',
+    },
+    {
+      label: '住宅借入金等特別控除の額',
+      slip: slip.housingLoanCredit,
+      calc: ye.housingLoanCredit,
+      href: '#/deductions',
+    },
+    {
+      label: '所得控除の額の合計額',
+      slip: slip.totalDeductions,
+      calc: ye.deductions.total,
+      href: '#/deductions',
+    },
+    { label: '源泉徴収税額', slip: slip.withheldTax, calc: ye.annualTax, href: '#/result' },
+  ];
+  return rows;
+}
+
+/** Intermediate figures that differ (the tax itself excluded): the likely causes. */
+export function slipDifferences(
+  slip: WithholdingSlipRecord,
+  summary: AnnualSummary,
+): SlipDifference[] {
+  return slipComparison(slip, summary).filter(
+    (r) => r.label !== '源泉徴収税額' && r.slip !== r.calc,
+  );
 }
 
 export interface FurusatoWarning {

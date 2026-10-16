@@ -2,12 +2,19 @@ import { useState } from 'react';
 import type { Cell, YearTable } from '../../../domain/forecast';
 import { slotId, type SlotKey } from '../../../domain/ledger';
 import { newId } from '../../../domain/repo';
+import { slotPay, tablePay, type PayBreakdown } from '../../../domain/takeHome';
 import { TAX_CATEGORY_LABEL, type ItemMaster } from '../../../domain/types';
 import { useAppData } from '../../state';
 import { Button, Money, Panel, TableScroll, TD_NUM, TH, YenInput, errorText, yen } from '../../ui';
 
 const slotLabel = (s: SlotKey): string =>
   s.kind === 'bonus' ? `${s.month}月賞与` : `${s.month}月`;
+
+const SUMMARY_ROWS: readonly { key: keyof PayBreakdown; label: string; strong?: boolean }[] = [
+  { key: 'gross', label: '支給合計' },
+  { key: 'deductions', label: '控除合計' },
+  { key: 'net', label: '差引支給額（手取り）', strong: true },
+];
 
 const METHOD_LABEL: Record<string, string> = {
   recent: '直近月',
@@ -146,6 +153,33 @@ export function PayslipGrid({ table }: { table: YearTable }) {
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            {SUMMARY_ROWS.map((row) => (
+              <tr
+                key={row.key}
+                className={row.strong ? 'bg-accent-soft/60 font-semibold' : 'bg-paper-deep/60'}
+              >
+                <th
+                  scope="row"
+                  className={`sticky left-0 z-[1] border-b border-rule/70 px-2.5 py-1.5 text-left whitespace-nowrap ${row.strong ? 'bg-accent-soft text-accent' : 'bg-paper-deep font-medium'}`}
+                >
+                  {row.label}
+                </th>
+                {table.slots.map((s) => {
+                  const isActual = table.actualSlotIds.has(slotId(s));
+                  return (
+                    <td
+                      key={slotId(s)}
+                      className={`${TD_NUM} ${isActual ? '' : 'text-ink-soft italic'}`}
+                    >
+                      {yen(slotPay(ledger, table, s)[row.key])}
+                    </td>
+                  );
+                })}
+                <td className={`${TD_NUM} font-bold`}>{yen(tablePay(ledger, table)[row.key])}</td>
+              </tr>
+            ))}
+          </tfoot>
         </table>
       </TableScroll>
       {selected && (
