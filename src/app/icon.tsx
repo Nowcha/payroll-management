@@ -9,6 +9,8 @@ import calculate from '@material-symbols/svg-400/rounded/calculate.svg?raw';
 import calculateFill from '@material-symbols/svg-400/rounded/calculate-fill.svg?raw';
 import checkCircle from '@material-symbols/svg-400/rounded/check_circle.svg?raw';
 import close from '@material-symbols/svg-400/rounded/close.svg?raw';
+import contract from '@material-symbols/svg-400/rounded/contract.svg?raw';
+import contractFill from '@material-symbols/svg-400/rounded/contract-fill.svg?raw';
 import ecgHeart from '@material-symbols/svg-400/rounded/ecg_heart.svg?raw';
 import ecgHeartFill from '@material-symbols/svg-400/rounded/ecg_heart-fill.svg?raw';
 import error from '@material-symbols/svg-400/rounded/error.svg?raw';
@@ -36,6 +38,7 @@ const RAW = {
   calculate: [calculate, calculateFill],
   check_circle: [checkCircle],
   close: [close],
+  contract: [contract, contractFill],
   ecg_heart: [ecgHeart, ecgHeartFill],
   error: [error],
   event_upcoming: [eventUpcoming],

@@ -11,6 +11,7 @@ import { MedicalScreen } from './screens/Medical';
 import { FurusatoScreen } from './screens/Furusato';
 import { ResultScreen } from './screens/Result';
 import { SettingsScreen } from './screens/Settings';
+import { SlipDraftScreen } from './screens/SlipDraft';
 
 interface Route {
   path: string;
@@ -49,6 +50,13 @@ const ROUTES: readonly Route[] = [
     icon: 'calculate',
     primary: true,
     render: () => <ResultScreen />,
+  },
+  {
+    path: 'slip',
+    label: '源泉徴収票',
+    icon: 'contract',
+    primary: false,
+    render: () => <SlipDraftScreen />,
   },
   {
     path: 'compare',
