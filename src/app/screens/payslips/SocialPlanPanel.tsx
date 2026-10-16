@@ -105,10 +105,10 @@ export function SocialPlanPanel({ plan }: { plan: RemunerationPlan | null }) {
               type="button"
               aria-pressed={leave.has(m)}
               onClick={() => toggle(m)}
-              className={`min-h-9 rounded-sm border text-sm font-semibold transition-colors ${
+              className={`min-h-9 rounded-lg border text-sm font-medium transition-colors duration-200 ${
                 leave.has(m)
                   ? 'border-owed bg-owed-soft text-owed'
-                  : 'border-rule bg-white text-ink-soft hover:border-ink'
+                  : 'border-rule bg-surface text-ink-soft hover:border-ink-faint hover:text-ink'
               }`}
             >
               {m}月
@@ -134,7 +134,7 @@ export function SocialPlanPanel({ plan }: { plan: RemunerationPlan | null }) {
             {plan.revisions.map((r) => (
               <div
                 key={`${r.kind}-${r.fromMonth}`}
-                className="rounded-sm border border-rule bg-paper p-3 text-sm"
+                className="rounded-xl border border-rule bg-paper p-4 text-sm"
               >
                 <div className="flex flex-wrap items-baseline gap-2">
                   <Badge tone="refund">{REVISION_LABEL[r.kind]}</Badge>

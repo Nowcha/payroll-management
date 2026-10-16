@@ -1,7 +1,21 @@
+import {
+  BarChart3,
+  Calculator,
+  FileText,
+  Gift,
+  HeartPulse,
+  LayoutDashboard,
+  MoreHorizontal,
+  Settings,
+  ShieldCheck,
+  Users,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { SUPPORTED_YEARS } from '../engine';
 import { AppDataProvider, useAppData } from './state';
-import { Notice, Select } from './ui';
+import { Notice } from './ui';
 import { DashboardScreen } from './screens/Dashboard';
 import { PayslipsScreen } from './screens/Payslips';
 import { CompareScreen } from './screens/Compare';
@@ -11,85 +25,284 @@ import { FurusatoScreen } from './screens/Furusato';
 import { ResultScreen } from './screens/Result';
 import { SettingsScreen } from './screens/Settings';
 
-const ROUTES = [
-  { path: 'dashboard', label: 'ダッシュボード', render: () => <DashboardScreen /> },
-  { path: 'payslips', label: '給与明細', render: () => <PayslipsScreen /> },
-  { path: 'compare', label: '比較', render: () => <CompareScreen /> },
-  { path: 'deductions', label: '控除', render: () => <DeductionsScreen /> },
-  { path: 'medical', label: '医療費', render: () => <MedicalScreen /> },
-  { path: 'furusato', label: 'ふるさと納税', render: () => <FurusatoScreen /> },
-  { path: 'result', label: '試算結果', render: () => <ResultScreen /> },
-  { path: 'settings', label: '設定', render: () => <SettingsScreen /> },
-] as const;
+interface Route {
+  path: string;
+  label: string;
+  icon: LucideIcon;
+  /** Shown in the mobile bottom bar; the rest live under "その他". */
+  primary: boolean;
+  render: () => ReactNode;
+}
 
-type RoutePath = (typeof ROUTES)[number]['path'];
+const ROUTES: readonly Route[] = [
+  {
+    path: 'dashboard',
+    label: 'ホーム',
+    icon: LayoutDashboard,
+    primary: true,
+    render: () => <DashboardScreen />,
+  },
+  {
+    path: 'payslips',
+    label: '給与明細',
+    icon: FileText,
+    primary: true,
+    render: () => <PayslipsScreen />,
+  },
+  {
+    path: 'furusato',
+    label: 'ふるさと納税',
+    icon: Gift,
+    primary: true,
+    render: () => <FurusatoScreen />,
+  },
+  {
+    path: 'result',
+    label: '試算結果',
+    icon: Calculator,
+    primary: true,
+    render: () => <ResultScreen />,
+  },
+  {
+    path: 'compare',
+    label: '比較',
+    icon: BarChart3,
+    primary: false,
+    render: () => <CompareScreen />,
+  },
+  {
+    path: 'deductions',
+    label: '控除',
+    icon: Users,
+    primary: false,
+    render: () => <DeductionsScreen />,
+  },
+  {
+    path: 'medical',
+    label: '医療費',
+    icon: HeartPulse,
+    primary: false,
+    render: () => <MedicalScreen />,
+  },
+  {
+    path: 'settings',
+    label: '設定',
+    icon: Settings,
+    primary: false,
+    render: () => <SettingsScreen />,
+  },
+];
 
-function currentPath(): RoutePath {
+function currentPath(): string {
   const hash = window.location.hash.replace(/^#\/?/, '');
   return ROUTES.find((r) => r.path === hash)?.path ?? 'dashboard';
 }
 
-function useRoute(): RoutePath {
-  const [path, setPath] = useState<RoutePath>(currentPath);
+function useRoute(): string {
+  const [path, setPath] = useState<string>(currentPath);
   useEffect(() => {
-    const onHash = (): void => setPath(currentPath());
+    const onHash = (): void => {
+      setPath(currentPath());
+      window.scrollTo({ top: 0 });
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
   return path;
 }
 
-function Shell({ children, path }: { children: ReactNode; path: RoutePath }) {
-  const { year, setYear, error } = useAppData();
+function YearSwitch() {
+  const { year, setYear } = useAppData();
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-16">
-      <header className="sticky top-0 z-10 -mx-4 mb-6 border-b border-rule bg-paper/95 px-4 pt-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <a href="#/dashboard" className="text-lg font-black tracking-tight">
-            還付金試算
-            <span className="ml-1 align-top text-[10px] font-semibold text-ink-soft">
-              給与明細ベース
-            </span>
-          </a>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-ink-soft">年分</span>
-            <span className="w-24">
-              <Select
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-                aria-label="対象の年分"
-              >
-                {SUPPORTED_YEARS.map((y) => (
-                  <option key={y} value={y}>
-                    {y}年
-                  </option>
-                ))}
-              </Select>
-            </span>
-          </label>
+    <div role="radiogroup" aria-label="対象の年分" className="flex rounded-lg bg-paper-deep p-0.5">
+      {SUPPORTED_YEARS.map((y) => (
+        <button
+          key={y}
+          type="button"
+          role="radio"
+          aria-checked={y === year}
+          onClick={() => setYear(y)}
+          className={`figures rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${
+            y === year ? 'bg-surface text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
+          }`}
+        >
+          {y}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Brand() {
+  return (
+    <a href="#/dashboard" className="flex items-center gap-2.5">
+      <span className="grid size-8 place-items-center rounded-lg bg-accent text-white shadow-sm dark:text-paper">
+        <Calculator className="size-4" strokeWidth={2.2} aria-hidden />
+      </span>
+      <span className="leading-tight">
+        <span className="block text-sm font-semibold tracking-tight">還付金試算</span>
+        <span className="block text-[10px] text-ink-soft">給与明細ベース</span>
+      </span>
+    </a>
+  );
+}
+
+function NavLink({
+  route,
+  active,
+  compact = false,
+}: {
+  route: Route;
+  active: boolean;
+  compact?: boolean;
+}) {
+  const Icon = route.icon;
+  if (compact) {
+    return (
+      <a
+        href={`#/${route.path}`}
+        aria-current={active ? 'page' : undefined}
+        className={`flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors ${
+          active ? 'text-accent' : 'text-ink-soft'
+        }`}
+      >
+        <Icon className="size-5" strokeWidth={active ? 2.2 : 1.8} aria-hidden />
+        {route.label}
+      </a>
+    );
+  }
+  return (
+    <a
+      href={`#/${route.path}`}
+      aria-current={active ? 'page' : undefined}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-200 ${
+        active
+          ? 'bg-surface font-medium text-ink shadow-sm'
+          : 'text-ink-soft hover:bg-paper-deep hover:text-ink'
+      }`}
+    >
+      <Icon className={`size-4 ${active ? 'text-accent' : ''}`} strokeWidth={2} aria-hidden />
+      {route.label}
+    </a>
+  );
+}
+
+function MoreSheet({ path, onClose }: { path: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-40 lg:hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="その他の画面"
+    >
+      <button
+        type="button"
+        aria-label="閉じる"
+        className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+      <div className="fade-in absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-rule bg-surface p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-[var(--shadow-pop)]">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-sm font-semibold">その他</span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="閉じる"
+            className="rounded-lg p-1.5 text-ink-soft hover:bg-paper-deep"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
         </div>
-        <nav aria-label="画面" className="-mx-4 mt-2 flex gap-1 overflow-x-auto px-4">
+        <div className="grid grid-cols-2 gap-2">
+          {ROUTES.filter((r) => !r.primary).map((r) => {
+            const Icon = r.icon;
+            return (
+              <a
+                key={r.path}
+                href={`#/${r.path}`}
+                onClick={onClose}
+                className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-sm ${
+                  r.path === path ? 'border-accent bg-accent-soft text-accent' : 'border-rule'
+                }`}
+              >
+                <Icon className="size-5" aria-hidden />
+                {r.label}
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrivacyNote() {
+  return (
+    <p className="flex gap-2 text-[11px] leading-relaxed text-ink-faint">
+      <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+      データはこの端末のブラウザにのみ保存され、外部に送信されません。試算は目安です。
+    </p>
+  );
+}
+
+function Shell({ children, path }: { children: ReactNode; path: string }) {
+  const { error } = useAppData();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreActive = !ROUTES.find((r) => r.path === path)?.primary;
+
+  return (
+    <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
+      <aside className="sticky top-0 hidden h-dvh flex-col gap-6 border-r border-rule px-4 py-5 lg:flex">
+        <Brand />
+        <div>
+          <div className="mb-2 px-1 text-[11px] font-medium text-ink-faint">対象の年分</div>
+          <YearSwitch />
+        </div>
+        <nav aria-label="画面" className="flex flex-col gap-0.5">
           {ROUTES.map((r) => (
-            <a
-              key={r.path}
-              href={`#/${r.path}`}
-              aria-current={r.path === path ? 'page' : undefined}
-              className={`whitespace-nowrap border-b-[3px] px-2.5 py-2 text-sm font-semibold transition-colors ${
-                r.path === path
-                  ? 'border-ink text-ink'
-                  : 'border-transparent text-ink-soft hover:text-ink'
-              }`}
-            >
-              {r.label}
-            </a>
+            <NavLink key={r.path} route={r} active={r.path === path} />
           ))}
         </nav>
-      </header>
-      {error && <Notice level="error">{error}</Notice>}
-      <main>{children}</main>
-      <footer className="mt-12 border-t border-rule pt-3 text-xs text-ink-soft">
-        データはこのブラウザ（IndexedDB）にのみ保存され、外部に送信されません。試算は目安です。最終判断は源泉徴収票と確定申告書等作成コーナーで行ってください。
-      </footer>
+        <div className="mt-auto">
+          <PrivacyNote />
+        </div>
+      </aside>
+
+      <div className="min-w-0">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-rule bg-paper/85 px-4 py-2.5 backdrop-blur-md lg:hidden">
+          <Brand />
+          <YearSwitch />
+        </header>
+        <main className="mx-auto max-w-6xl px-4 pt-5 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-16">
+          {error && (
+            <div className="mb-4">
+              <Notice level="error">{error}</Notice>
+            </div>
+          )}
+          {children}
+          <div className="mt-12 lg:hidden">
+            <PrivacyNote />
+          </div>
+        </main>
+      </div>
+
+      <nav
+        aria-label="画面"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-rule bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+      >
+        {ROUTES.filter((r) => r.primary).map((r) => (
+          <NavLink key={r.path} route={r} active={r.path === path} compact />
+        ))}
+        <button
+          type="button"
+          onClick={() => setMoreOpen(true)}
+          className={`flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium ${moreActive ? 'text-accent' : 'text-ink-soft'}`}
+        >
+          <MoreHorizontal className="size-5" aria-hidden />
+          その他
+        </button>
+      </nav>
+      {moreOpen && <MoreSheet path={path} onClose={() => setMoreOpen(false)} />}
     </div>
   );
 }
@@ -97,7 +310,7 @@ function Shell({ children, path }: { children: ReactNode; path: RoutePath }) {
 function Router() {
   const path = useRoute();
   const route = ROUTES.find((r) => r.path === path) ?? ROUTES[0];
-  return <Shell path={path}>{route.render()}</Shell>;
+  return <Shell path={path}>{route?.render()}</Shell>;
 }
 
 export function App() {

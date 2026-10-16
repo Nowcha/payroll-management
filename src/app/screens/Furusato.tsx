@@ -18,6 +18,7 @@ import {
   Panel,
   Select,
   Stat,
+  Meter,
   TableScroll,
   TD,
   TD_NUM,
@@ -86,56 +87,65 @@ export function FurusatoScreen() {
       title={`${year}年のふるさと納税`}
       lead="上限は実績＋予測の年収と登録済みの控除から算出。年分は寄付日で判定します。"
     >
-      <div className="grid gap-4 md:grid-cols-3">
-        <Panel className="md:col-span-2">
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-            <Stat
-              size="lg"
-              label="残枠"
-              tone={summary.furusatoRemaining >= 0 ? 'refund' : 'owed'}
-              value={<Money value={summary.furusatoRemaining} />}
+      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <section className="rounded-3xl border border-rule bg-surface p-5 shadow-[var(--shadow-card)] sm:p-7">
+          <Stat
+            size="lg"
+            label="残枠"
+            tone={summary.furusatoRemaining >= 0 ? 'accent' : 'owed'}
+            value={<Money value={summary.furusatoRemaining} />}
+          />
+          <div className="mt-5">
+            <Meter
+              value={summary.donationsTotal}
+              max={active.limit}
+              tone={summary.furusatoRemaining < 0 ? 'owed' : 'accent'}
             />
+          </div>
+          <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-rule pt-5">
             <Stat
+              size="sm"
               label="上限額"
               value={<Money value={active.limit} />}
-              note={filing ? '医療費控除ありの上限' : '医療費控除なしの上限'}
+              note={filing ? '医療費控除あり' : '医療費控除なし'}
             />
             <Stat
+              size="sm"
               label="寄付済み"
               value={<Money value={summary.donationsTotal} />}
               note={`${donations.length}件`}
             />
             <Stat
+              size="sm"
               label="推奨寄付額"
               value={<Money value={summary.hasForecast ? active.recommended : active.limit} />}
-              note={summary.hasForecast ? '予測を含むため上限の90%' : ''}
+              note={summary.hasForecast ? '予測を含むため90%' : '全月実績'}
             />
-          </div>
-        </Panel>
-        <Panel title="医療費控除による違い">
-          <dl className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <dt>医療費控除なし</dt>
-              <dd>
-                <Money value={withoutMedical.limit} />
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt>医療費控除あり</dt>
-              <dd>
-                <Money value={withMedical.limit} />
-              </dd>
-            </div>
-            <div className="flex justify-between text-ink-soft">
-              <dt>所得割額（なし）</dt>
-              <dd>
-                <Money value={withoutMedical.incomeLevy} />
-              </dd>
-            </div>
-            <div className="flex justify-between text-ink-soft">
-              <dt>限界税率</dt>
-              <dd className="figures">{(withoutMedical.marginalRate * 100).toFixed(0)}%</dd>
-            </div>
+          </dl>
+        </section>
+        <Panel
+          title="医療費控除による違い"
+          description="医療費控除を使うと住民税の所得割が下がり、上限も下がります"
+        >
+          <dl className="divide-y divide-rule text-sm">
+            {(
+              [
+                ['医療費控除なし', <Money key="a" value={withoutMedical.limit} />],
+                ['医療費控除あり', <Money key="b" value={withMedical.limit} />],
+                ['所得割額（なし）', <Money key="c" value={withoutMedical.incomeLevy} />],
+                [
+                  '限界税率',
+                  <span key="d" className="figures">
+                    {(withoutMedical.marginalRate * 100).toFixed(0)}%
+                  </span>,
+                ],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between py-2">
+                <dt className="text-ink-soft">{label}</dt>
+                <dd className="font-medium">{value}</dd>
+              </div>
+            ))}
           </dl>
         </Panel>
       </div>
@@ -155,7 +165,7 @@ export function FurusatoScreen() {
       >
         {message && <Notice level="error">{message}</Notice>}
         {draft && (
-          <div className="mb-4 grid gap-3 rounded-sm border border-ink/30 bg-paper p-3 sm:grid-cols-3">
+          <div className="mb-4 grid gap-3 rounded-xl border border-rule bg-paper p-4 sm:grid-cols-3">
             <Field label="寄付日">
               <TextInput
                 type="date"

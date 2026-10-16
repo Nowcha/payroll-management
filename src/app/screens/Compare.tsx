@@ -26,8 +26,9 @@ import {
 } from '../ui';
 import { TrendChart, type TrendSeries } from './TrendChart';
 
-const THIS_YEAR_COLOR = '#00876f';
-const LAST_YEAR_COLOR = '#b8711f';
+// Validated with the dataviz palette checker on both surfaces (light #00876f/#b8711f, dark #2fa98a/#b57b36).
+const THIS_YEAR_COLOR = 'var(--color-series-1)';
+const LAST_YEAR_COLOR = 'var(--color-series-2)';
 
 function CompareTable({ rows, baseLabel }: { rows: CompareRow[]; baseLabel: string }) {
   if (rows.length === 0) return <EmptyState>比較できる実績がありません</EmptyState>;

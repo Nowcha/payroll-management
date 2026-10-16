@@ -47,8 +47,8 @@ export default defineConfig({
           '給与明細から年末調整・確定申告の還付とふるさと納税の上限を試算（データは端末内のみ）',
         lang: 'ja',
         display: 'standalone',
-        background_color: '#faf6ec',
-        theme_color: '#24293a',
+        background_color: '#f6f7fa',
+        theme_color: '#3a4cba',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
@@ -56,7 +56,7 @@ export default defineConfig({
       },
       workbox: {
         // App shell + pdf.js worker and CID cMaps so PDF import also works offline.
-        globPatterns: ['**/*.{js,css,html,svg,png,bcmap,pfb,ttf}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,bcmap,pfb,ttf}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }),

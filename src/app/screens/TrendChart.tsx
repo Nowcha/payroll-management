@@ -158,7 +158,7 @@ export function TrendChart({ series, title }: { series: TrendSeries[]; title: st
                   cy={y(s.points[hover - 1]?.value ?? 0)}
                   r="4"
                   fill={s.color}
-                  stroke="white"
+                  stroke="var(--color-surface)"
                   strokeWidth="2"
                 />
               )}
